@@ -59,7 +59,7 @@ reading, rather than trusting a port number.
 ### One-line install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/autoterm-5d-control/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/sinise/autoterm-5d-control/main/install.sh | bash
 ```
 
 This installs OS dependencies, clones the repo, adds you to the `dialout`
@@ -71,7 +71,7 @@ assignment (`AUTOTERM_PANEL_PORT`, `AUTOTERM_HEATER_PORT`, etc).
 ### Manual install
 
 ```bash
-git clone https://github.com/YOUR_GITHUB_USERNAME/autoterm-5d-control.git
+git clone https://github.com/sinise/autoterm-5d-control.git
 cd autoterm-5d-control
 ./install.sh
 ```

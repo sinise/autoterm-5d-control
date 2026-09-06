@@ -2,7 +2,7 @@
 # Autoterm 5D control -- installer.
 #
 # Usage (fresh machine, one-liner):
-#   curl -fsSL https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/autoterm-5d-control/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/sinise/autoterm-5d-control/main/install.sh | bash
 #
 # Usage (already cloned the repo):
 #   ./install.sh
@@ -28,7 +28,7 @@
 
 set -euo pipefail
 
-REPO_URL="${AUTOTERM_REPO_URL:-https://github.com/YOUR_GITHUB_USERNAME/autoterm-5d-control.git}"
+REPO_URL="${AUTOTERM_REPO_URL:-https://github.com/sinise/autoterm-5d-control.git}"
 INSTALL_DIR="${AUTOTERM_INSTALL_DIR:-$HOME/autoterm-5d-control}"
 PANEL_PORT="${AUTOTERM_PANEL_PORT:-/dev/ttyUSB1}"
 HEATER_PORT="${AUTOTERM_HEATER_PORT:-/dev/ttyUSB3}"
@@ -53,11 +53,6 @@ elif [ -e "$INSTALL_DIR" ]; then
     echo "Remove it or set AUTOTERM_INSTALL_DIR to a different path." >&2
     exit 1
 else
-    if [[ "$REPO_URL" == *YOUR_GITHUB_USERNAME* ]]; then
-        echo "ERROR: REPO_URL still has the placeholder username in it." >&2
-        echo "Set AUTOTERM_REPO_URL=https://github.com/<you>/<repo>.git and re-run." >&2
-        exit 1
-    fi
     log "Cloning $REPO_URL to $INSTALL_DIR..."
     git clone "$REPO_URL" "$INSTALL_DIR"
 fi

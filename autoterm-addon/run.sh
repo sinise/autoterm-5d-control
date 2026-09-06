@@ -31,14 +31,17 @@ if bashio::config.true 'autodiscover_ports'; then
     fi
 fi
 
-if bashio::services.available 'mqtt'; then
+# bashio logs its own ERROR line here when no add-on provides the mqtt
+# service at all (as opposed to it being merely unconfigured) -- harmless,
+# the `else` branch below handles that case either way, so it's quieted.
+if bashio::services.available 'mqtt' 2>/dev/null; then
     bashio::log.info "Using MQTT service auto-discovery"
     MQTT_HOST=$(bashio::services 'mqtt' 'host')
     MQTT_PORT=$(bashio::services 'mqtt' 'port')
     MQTT_USER=$(bashio::services 'mqtt' 'username')
     MQTT_PASS=$(bashio::services 'mqtt' 'password')
 else
-    bashio::log.warning "No MQTT service found -- falling back to add-on options"
+    bashio::log.warning "No MQTT service found -- falling back to add-on options (install the Mosquitto broker add-on for auto-discovery, or set mqtt_host/mqtt_port in this add-on's Configuration)"
     MQTT_HOST=$(bashio::config 'mqtt_host')
     MQTT_PORT=$(bashio::config 'mqtt_port')
     MQTT_USER=$(bashio::config 'mqtt_username')

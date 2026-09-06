@@ -624,22 +624,43 @@ class Bridge:
     # -- lifecycle ------------------------------------------------------
 
     def run(self):
+        # Relay + command handling start regardless of MQTT status -- the
+        # physical panel must keep working even if Home Assistant/MQTT is
+        # completely unreachable, same as autoterm_web.py's passthrough.
         self.panel_to_heater.start()
         self.heater_to_panel.start()
         self.auto.start()
         threading.Thread(target=self._command_worker, daemon=True).start()
         threading.Thread(target=self._heartbeat, daemon=True).start()
-
-        self.mqtt.connect(self.cfg["mqtt_host"], self.cfg["mqtt_port"], keepalive=30)
-        self.mqtt.loop_start()
+        threading.Thread(target=self._start_mqtt, daemon=True).start()
 
         log.info(
-            "Autoterm bridge running: panel=%s heater=%s baud=%s mqtt=%s:%s",
+            "Autoterm bridge running: panel=%s heater=%s baud=%s (MQTT connecting in background: %s:%s)",
             self.cfg["panel_port"], self.cfg["heater_port"], self.cfg["baud"],
             self.cfg["mqtt_host"], self.cfg["mqtt_port"],
         )
 
         self.stop_evt.wait()
+
+    def _start_mqtt(self):
+        host, port = self.cfg["mqtt_host"], self.cfg["mqtt_port"]
+        if not host:
+            log.error(
+                "No MQTT broker configured -- relay/passthrough keeps running, "
+                "but Home Assistant entities need MQTT. Install the Mosquitto "
+                "broker add-on, or set mqtt_host in this add-on's Configuration "
+                "tab, then restart it."
+            )
+            return
+        try:
+            # connect_async + loop_start hands connection (and automatic
+            # reconnection on broker downtime) to paho's background thread,
+            # instead of a blocking connect() that raises straight into this
+            # thread on a bad/unreachable host.
+            self.mqtt.connect_async(host, port, keepalive=30)
+            self.mqtt.loop_start()
+        except Exception as e:
+            log.error("Could not start MQTT connection to %s:%s: %r", host, port, e)
 
     def shutdown(self):
         if self.stop_evt.is_set() and self._shutdown_done:
@@ -678,7 +699,10 @@ def cfg_from_env():
         "baud": env_int("AUTOTERM_BAUD", 2400),
         "preheat_default": env_int("AUTOTERM_PREHEAT_DEFAULT", 30),
         "auto_target_default": env_float("AUTOTERM_AUTO_TARGET_DEFAULT", 20.0),
-        "mqtt_host": os.environ.get("AUTOTERM_MQTT_HOST", "core-mosquitto"),
+        # run.sh always exports this var (possibly to an empty string when no
+        # MQTT service/option is set), so a plain .get(..., default) default
+        # never actually applies -- fall back explicitly on emptiness too.
+        "mqtt_host": os.environ.get("AUTOTERM_MQTT_HOST") or "core-mosquitto",
         "mqtt_port": env_int("AUTOTERM_MQTT_PORT", 1883),
         "mqtt_username": os.environ.get("AUTOTERM_MQTT_USERNAME") or None,
         "mqtt_password": os.environ.get("AUTOTERM_MQTT_PASSWORD") or None,

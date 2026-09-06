@@ -135,8 +135,8 @@ exactly.
 - Whether there's a maximum/minimum duration, and how out-of-range values
   are rejected (never tested -- avoid testing extremes on a live fuel
   system without supervision).
-- Fine timing: request/reply gaps are consistently ~30-65ms (panel
-  responding to the heater's poll) and frame timestamps in this project are
+- Fine timing: request/reply gaps are consistently ~30-65ms (heater
+  responding to the panels's poll) and frame timestamps in this project are
   computed from wire time (bytes-since-start), not read()-completion time --
   see the monitor script's comments if reusing this for new timing-sensitive
   analysis.

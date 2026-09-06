@@ -35,7 +35,19 @@ re-derive the CRC or frame format; they're solved and verified.
   harness for the tricky edge cases (no repeated stop-spam during the
   multi-minute cooldown window, no action on stale readings)
 
-**Not yet built (the immediate next task if the user wants it continued):**
+**Also working and verified against the design (not yet run on real
+hardware as of this writing -- test it live before trusting it unattended):**
+A Home Assistant Supervisor add-on at `homeassistant-addon/autoterm/`.
+It's a full replacement for `autoterm_web.py` (owns the serial ports
+directly, same relay + Commander + AutoThermostat logic, code reused not
+re-derived) that speaks MQTT with Home Assistant MQTT discovery instead of
+serving its own HTTP dashboard. See `homeassistant-addon/autoterm/DOCS.md`.
+This supersedes the openHAB plan below for this project -- the openHAB
+investigation notes are kept here for reference in case that path is
+revisited, but Home Assistant is the live direction now.
+
+**openHAB path (investigated, not implemented, likely superseded by the HA
+add-on above unless the user says otherwise):**
 openHAB integration via MQTT, with InfluxDB persistence. Investigated but
 not implemented. Specifically:
 - This machine (openHABian) has openHAB 5.2.1 running and InfluxDB 1.12.4

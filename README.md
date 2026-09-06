@@ -6,8 +6,8 @@ comfort panel) from a Raspberry Pi -- built for a boat installation, but the
 protocol and tooling aren't boat-specific.
 
 Status: passive decoding and live command injection (start/stop) are
-**working and verified against real hardware**. An openHAB/MQTT/InfluxDB
-integration is planned but not yet built -- see [Roadmap](#roadmap).
+**working and verified against real hardware**. A Home Assistant add-on is
+also available -- see [`homeassistant-addon/`](homeassistant-addon/).
 
 ## What's in here
 
@@ -19,6 +19,7 @@ integration is planned but not yet built -- see [Roadmap](#roadmap).
 | `autoterm/autoterm_web.py` | Everything `autoterm_proxy.py` does, plus a REST API, a self-contained web dashboard, command injection (start preheat/thermostat, stop), and a software hysteresis auto-thermostat loop. This is the one you actually run. |
 | `tools/baud_sweep.sh` | Baud-rate discovery sweep, for bringing this up on unfamiliar hardware. |
 | `docs/PROTOCOL.md` | Full protocol writeup: frame format, CRC, device roles, message catalog, state machine, confirmed commands, open questions. |
+| `homeassistant-addon/autoterm/` | Home Assistant Supervisor add-on: owns the serial ports directly (runs instead of `autoterm_web.py`), publishes status and exposes controls via MQTT discovery. See its `DOCS.md`. |
 
 ## Hardware
 
@@ -133,14 +134,24 @@ python3 autoterm/autoterm_analyze.py inventory ~/autoterm_logs/capture_*.log
   supervise it through at least one full cycle before trusting it
   unattended overnight.
 
+## Home Assistant
+
+[`homeassistant-addon/autoterm/`](homeassistant-addon/autoterm/) is a
+Supervisor add-on (Docker) that runs **instead of** `autoterm-web` -- it
+owns the serial ports directly and talks to Home Assistant over MQTT
+discovery, so the heater shows up as a single device with sensors (state,
+fault, cabin/coolant temp, elapsed run time), a climate entity driving the
+same auto-thermostat hysteresis loop, and Start preheat/Start
+thermostat/Stop buttons. See its `DOCS.md` for wiring prerequisites,
+options, and installation (copy the folder to `/addons/` on the Home
+Assistant host, or add this repo as a custom add-on repository).
+
 ## Roadmap
 
-- **openHAB / MQTT / InfluxDB integration** -- planned, not yet built.
-  Intended shape: `autoterm_web.py` gains an MQTT publisher (state) and
-  subscriber (commands), openHAB's MQTT binding exposes it as a Thing, and
-  standard openHAB persistence handles InfluxDB. Blocked at the point of
-  installing a local Mosquitto broker + `paho-mqtt`. See `CONTEXT.md` for
-  exact next steps if picking this up in a fresh session.
+- **openHAB / InfluxDB integration** -- investigated but not built (this
+  project moved to Home Assistant instead, see above). See `CONTEXT.md` for
+  the openHAB-specific findings (openHAB 5.2.1 + InfluxDB 1.x confirmed
+  running, Mosquitto/paho-mqtt not yet installed) if picking that up later.
 - Nail down the `type04`/`type06` unidentified message pair.
 - Resolve the preheat duration encoding inconsistency.
 

@@ -7,7 +7,7 @@ protocol and tooling aren't boat-specific.
 
 Status: passive decoding and live command injection (start/stop) are
 **working and verified against real hardware**. A Home Assistant add-on is
-also available -- see [`homeassistant-addon/`](homeassistant-addon/).
+also available -- see [`autoterm-addon/`](autoterm-addon/).
 
 ## What's in here
 
@@ -19,7 +19,7 @@ also available -- see [`homeassistant-addon/`](homeassistant-addon/).
 | `autoterm/autoterm_web.py` | Everything `autoterm_proxy.py` does, plus a REST API, a self-contained web dashboard, command injection (start preheat/thermostat, stop), and a software hysteresis auto-thermostat loop. This is the one you actually run. |
 | `tools/baud_sweep.sh` | Baud-rate discovery sweep, for bringing this up on unfamiliar hardware. |
 | `docs/PROTOCOL.md` | Full protocol writeup: frame format, CRC, device roles, message catalog, state machine, confirmed commands, open questions. |
-| `homeassistant-addon/autoterm/` | Home Assistant Supervisor add-on: owns the serial ports directly (runs instead of `autoterm_web.py`), publishes status and exposes controls via MQTT discovery. See its `DOCS.md`. |
+| `autoterm-addon/` | Home Assistant Supervisor add-on: owns the serial ports directly (runs instead of `autoterm_web.py`), publishes status and exposes controls via MQTT discovery. See its `DOCS.md`. |
 
 ## Hardware
 
@@ -136,7 +136,7 @@ python3 autoterm/autoterm_analyze.py inventory ~/autoterm_logs/capture_*.log
 
 ## Home Assistant
 
-[`homeassistant-addon/autoterm/`](homeassistant-addon/autoterm/) is a
+[`autoterm-addon/`](autoterm-addon/) is a
 Supervisor add-on (Docker) that runs **instead of** `autoterm-web` -- it
 owns the serial ports directly and talks to Home Assistant over MQTT
 discovery, so the heater shows up as a single device with sensors (state,

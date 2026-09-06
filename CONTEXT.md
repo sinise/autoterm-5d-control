@@ -37,11 +37,11 @@ re-derive the CRC or frame format; they're solved and verified.
 
 **Also working and verified against the design (not yet run on real
 hardware as of this writing -- test it live before trusting it unattended):**
-A Home Assistant Supervisor add-on at `homeassistant-addon/autoterm/`.
+A Home Assistant Supervisor add-on at `autoterm-addon/`.
 It's a full replacement for `autoterm_web.py` (owns the serial ports
 directly, same relay + Commander + AutoThermostat logic, code reused not
 re-derived) that speaks MQTT with Home Assistant MQTT discovery instead of
-serving its own HTTP dashboard. See `homeassistant-addon/autoterm/DOCS.md`.
+serving its own HTTP dashboard. See `autoterm-addon/DOCS.md`.
 This supersedes the openHAB plan below for this project -- the openHAB
 investigation notes are kept here for reference in case that path is
 revisited, but Home Assistant is the live direction now.

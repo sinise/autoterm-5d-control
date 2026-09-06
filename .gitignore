@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Runtime logs/captures -- not part of the published project
+autoterm_logs/
+*.log
+web_port.txt

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0
+
+- `State`, `Mode of operation`, and `Fault (extended, named)` are now
+  declared with `device_class: enum` and an explicit `options` list
+  (required for MQTT enum sensors). Previously these were plain text
+  sensors that Home Assistant's Prometheus exporter silently drops (it
+  can't export non-numeric values) -- they're now exported the same way
+  the climate entity's mode/action already were, one boolean series per
+  possible value, so they show up in VictoriaMetrics/Grafana too.
+
 ## 1.1.0
 
 - The extended telemetry frame (dev02/type01) is no longer forwarded to

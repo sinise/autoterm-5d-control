@@ -68,6 +68,10 @@ STATE_NAMES = {
     0x04: "cooldown",
     0x05: "final-shutdown",
 }
+# For the MQTT discovery "enum" device class, which requires every possible
+# value spelled out up front -- an undocumented state byte would just show
+# up as "unknown" in HA (dropped from Prometheus export too), not a crash.
+STATE_NAME_OPTIONS = list(STATE_NAMES.values())
 
 DEVICE_INFO = {
     "identifiers": [NODE_ID],
@@ -96,6 +100,10 @@ EXT_MODE_TABLE = [
     "waiting", "blowing", "pump only", "middle", "unknown",
     "blowing", "blowing", "blowing", "shutting down",
 ]
+# Same caveat as STATE_NAME_OPTIONS above: extended_mode_name() falls back
+# to a dynamic "unknown(S.SS)" string outside the table, which can't be
+# listed here -- that case shows as "unknown" in HA instead of a fixed name.
+EXT_MODE_NAME_OPTIONS = sorted(set(EXT_MODE_TABLE))
 
 # Partial, NOT independently cross-validated against a real fault -- read
 # from the vendor tool's own string table (language.res), matched to fault
@@ -113,6 +121,11 @@ EXT_FAULT_NAMES = {
     29: "Flame breaks too often", 30: "No connection", 37: "Overheat locking",
     78: "Flame break during running",
 }
+# Same caveat again: a fault code not in the table above falls back to a
+# dynamic "unknown(N)" string, which shows as "unknown" in HA/Prometheus
+# for this named sensor -- the numeric "Fault code" sensor still captures
+# the raw code in that case, nothing is lost, just not named.
+EXT_FAULT_NAME_OPTIONS = sorted(set(EXT_FAULT_NAMES.values()))
 
 
 def extended_mode_name(state, substate):
@@ -813,6 +826,7 @@ def discovery_configs():
     entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/state/config", {
         **base, "name": "State", "unique_id": f"{NODE_ID}_state",
         "state_topic": STATE_TOPIC, "value_template": blank_to_none("state"),
+        "device_class": "enum", "options": STATE_NAME_OPTIONS,
         "icon": "mdi:radiator",
     }))
     entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/fault/config", {
@@ -947,6 +961,7 @@ def discovery_configs():
     entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/ext_mode_name/config", {
         **base, "name": "Mode of operation", "unique_id": f"{NODE_ID}_ext_mode_name",
         "state_topic": STATE_TOPIC, "value_template": blank_to_none("ext_mode_name"),
+        "device_class": "enum", "options": EXT_MODE_NAME_OPTIONS,
         "icon": "mdi:state-machine",
     }))
     entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/ext_running_time/config", {
@@ -1004,6 +1019,7 @@ def discovery_configs():
     entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/ext_fault_name/config", {
         **base, "name": "Fault (extended, named)", "unique_id": f"{NODE_ID}_ext_fault_name",
         "state_topic": STATE_TOPIC, "value_template": blank_to_none("ext_fault_name"),
+        "device_class": "enum", "options": EXT_FAULT_NAME_OPTIONS,
         "icon": "mdi:alert-circle-outline", "entity_category": "diagnostic",
     }))
     entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/ext_engine_state/config", {

@@ -145,6 +145,14 @@ Everything the regular add-on's device has, plus:
   Supply voltage, Fault (extended, named), Engine state, Relay state, Fan
   current, Capture log file, Capture log size
 
+`State`, `Mode of operation`, and `Fault (extended, named)` are declared as
+`enum` sensors (a fixed `options` list of every possible value) rather than
+plain text -- this isn't just cosmetic in HA's own UI, it's what makes them
+show up at all if you're exporting to Prometheus/VictoriaMetrics (see
+`grafana/` in the main repo): HA's Prometheus integration can't export a
+freeform text state, but does support enum sensors, the same way it
+already exports the climate entity's mode/action.
+
 Field formulas are the vendor's own (read from its plaintext `.pfl`
 profile, not reverse-engineered from scratch) and cross-checked against a
 real capture -- see `docs/PROTOCOL.md`. The fault-code name table is a

@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.4.0
+
+- Added numeric mirrors for the three `enum` sensors added in 1.2.0:
+  "State code", "Mode code" (`state*10+substate`), "Fault code
+  (extended)". Confirmed via Grafana Explore against a real instance that
+  Home Assistant's Prometheus integration tracks enum sensors'
+  availability/last-updated/change-count, but never exports their actual
+  text value as a metric -- the 1.2.0 fix didn't actually solve the
+  Prometheus/Grafana graphing gap it was meant to. These numeric sensors
+  do export normally (same as Fault code/Engine state/Relay state
+  already did), and are meant to be name-mapped in Grafana itself (value
+  mappings) rather than relying on HA's exporter for that. See `grafana/`
+  in the main repo for updated panels using these.
+
 ## 1.3.0
 
 - Added a "Prevent freezing" switch and target (0-10°C), mirrored from the

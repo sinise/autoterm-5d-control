@@ -143,19 +143,26 @@ for the full explanation) -- plus:
 - **Binary sensor**: Extended telemetry active, Glow plug
 - **Sensors** (all extended-frame fields, populated only while Extended
   telemetry active is on): Mode of operation (named, e.g. "High", "middle",
-  "glow plug warming up"), Running time (extended), Defined revolutions,
-  Measured revolutions, Fuel pump frequency, Flame temperature, Liquid
-  temperature (extended), Overheat sensor temperature, Board temperature,
-  Supply voltage, Fault (extended, named), Engine state, Relay state, Fan
-  current, Capture log file, Capture log size
+  "glow plug warming up"), Mode code (numeric mirror, see below), Running
+  time (extended), Defined revolutions, Measured revolutions, Fuel pump
+  frequency, Flame temperature, Liquid temperature (extended), Overheat
+  sensor temperature, Board temperature, Supply voltage, Fault (extended,
+  named), Fault code (extended, numeric mirror), Engine state, Relay
+  state, Fan current, Capture log file, Capture log size
+- **Sensor** (always available): State code (numeric mirror of `State`)
 
 `State`, `Mode of operation`, and `Fault (extended, named)` are declared as
 `enum` sensors (a fixed `options` list of every possible value) rather than
-plain text -- this isn't just cosmetic in HA's own UI, it's what makes them
-show up at all if you're exporting to Prometheus/VictoriaMetrics (see
-`grafana/` in the main repo): HA's Prometheus integration can't export a
-freeform text state, but does support enum sensors, the same way it
-already exports the climate entity's mode/action.
+plain text -- genuinely useful for HA's own UI (dropdown-style display),
+**but does not make them exportable to Prometheus/VictoriaMetrics** as
+originally hoped: confirmed against a real instance that HA's Prometheus
+integration tracks an enum sensor's availability/last-updated/change-count,
+but never exports its actual text value as a metric (unlike the climate
+entity's `mode`/`action`, which do get a proper metric). `State code`,
+`Mode code` (`state*10+substate`), and `Fault code (extended)` are the
+numeric mirrors that actually export -- see `grafana/` in the main repo,
+which name-maps them back to text using Grafana's own value mappings
+instead of relying on HA's exporter for that.
 
 Field formulas are the vendor's own (read from its plaintext `.pfl`
 profile, not reverse-engineered from scratch) and cross-checked against a

@@ -145,6 +145,7 @@ def decode_extended_payload(payload):
     return {
         "ext_state_raw": state,
         "ext_substate_raw": substate,
+        "ext_mode_code": state * 10 + substate,
         "ext_mode_name": extended_mode_name(state, substate),
         "ext_running_time_s": p[2] * 65536 + p[3] * 256 + p[4],
         "ext_defined_rev": p[11],
@@ -924,6 +925,16 @@ def discovery_configs():
         "device_class": "enum", "options": STATE_NAME_OPTIONS,
         "icon": "mdi:radiator",
     }))
+    entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/state_code/config", {
+        # Numeric mirror of "State" -- HA's Prometheus exporter doesn't
+        # export enum sensors' text value as a metric at all (confirmed:
+        # it exports availability/last-updated/change-count metadata for
+        # them, but never the value itself), so this is what Grafana
+        # actually graphs, with the name applied there via value mappings.
+        **base, "name": "State code", "unique_id": f"{NODE_ID}_state_code",
+        "state_topic": STATE_TOPIC, "value_template": blank_to_none("state_raw"),
+        "icon": "mdi:radiator", "entity_category": "diagnostic",
+    }))
     entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/fault/config", {
         **base, "name": "Fault code", "unique_id": f"{NODE_ID}_fault",
         "state_topic": STATE_TOPIC, "value_template": blank_to_none("fault"),
@@ -1073,6 +1084,13 @@ def discovery_configs():
         "device_class": "enum", "options": EXT_MODE_NAME_OPTIONS,
         "icon": "mdi:state-machine",
     }))
+    entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/ext_mode_code/config", {
+        # Numeric mirror of "Mode of operation" (state*10+substate) -- see
+        # the comment on "State code" above for why this exists.
+        **base, "name": "Mode code", "unique_id": f"{NODE_ID}_ext_mode_code",
+        "state_topic": STATE_TOPIC, "value_template": blank_to_none("ext_mode_code"),
+        "icon": "mdi:state-machine", "entity_category": "diagnostic",
+    }))
     entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/ext_running_time/config", {
         **base, "name": "Running time (extended)", "unique_id": f"{NODE_ID}_ext_running_time",
         "state_topic": STATE_TOPIC,
@@ -1129,6 +1147,14 @@ def discovery_configs():
         **base, "name": "Fault (extended, named)", "unique_id": f"{NODE_ID}_ext_fault_name",
         "state_topic": STATE_TOPIC, "value_template": blank_to_none("ext_fault_name"),
         "device_class": "enum", "options": EXT_FAULT_NAME_OPTIONS,
+        "icon": "mdi:alert-circle-outline", "entity_category": "diagnostic",
+    }))
+    entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/ext_fault_code/config", {
+        # Numeric mirror of "Fault (extended, named)" -- see the comment on
+        # "State code" above for why this exists. Distinct from the base
+        # "Fault code" sensor (same presumed code space, different frame).
+        **base, "name": "Fault code (extended)", "unique_id": f"{NODE_ID}_ext_fault_code",
+        "state_topic": STATE_TOPIC, "value_template": blank_to_none("ext_fault_code"),
         "icon": "mdi:alert-circle-outline", "entity_category": "diagnostic",
     }))
     entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/ext_engine_state/config", {

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.0
+
+- Confirmed on real hardware (reconstructing this add-on's own "Telemetry
+  stale" logic against a live capture and matching it second-for-second
+  to Home Assistant's own history) that sending the debug handshake while
+  the panel's own query/reply exchange is mid-flight can corrupt that
+  exchange -- happened on roughly half of handshake sends, consistent
+  with a timing collision. Fixed: the handshake is now held until the bus
+  has been quiet for 250ms (no frame seen from either device) instead of
+  fired blindly on a fixed timer, applied to both the periodic send and
+  the "Send debug handshake now" button. Narrows the collision window;
+  still treat debug mode as experimental.
+
 ## 1.4.0
 
 - Added numeric mirrors for the three `enum` sensors added in 1.2.0:

@@ -43,18 +43,28 @@ confused if it receives that frame (it's not something its own firmware
 was ever designed to parse). Since 1.1.0, the add-on filters that specific
 frame out of the heater->panel relay direction -- it's still decoded for
 the sensors below, and still logged (marked "NOT forwarded (filtered)") if
-capture logging is on, it just never lands on the panel's wire. A real
-~64-minute capture with debug mode on and the panel connected showed
-completely normal panel poll traffic (query/reply every ~2s) the entire
-time once this filter was in place, and a distinct earlier collapse of the
-panel's own polling that resolved once the frame stopped reaching it. The
-PUBR0 handshake itself and the normal panel<->heater bus otherwise are
-still shared, so it's not risk-free to leave running unattended
-indefinitely, but the specific failure mode observed so far is fixed.
+capture logging is on, it just never lands on the panel's wire.
+
+**A second, separate issue was found and (partially) fixed in 1.5.0:**
+sending the handshake itself, while it's queued to go out the same
+heater_port line the panel's own query/reply traffic is relayed over, can
+corrupt that traffic -- confirmed by reconstructing this add-on's own
+"Telemetry stale" logic against a real capture and matching it
+second-for-second to Home Assistant's actual stale/OK history, and by
+finding a real 18-byte heater reply missing 2 bytes immediately after a
+handshake send. It happened on roughly half of handshake sends, not all --
+consistent with a timing collision, not a guaranteed failure. 1.5.0 holds
+the handshake until the bus has been quiet for 250ms before sending it,
+which narrows the collision window, but this has not been re-validated
+against a fresh long capture the way the panel-confusion fix was --
+**treat debug mode as experimental**, not fully solved, and watch
+`Telemetry stale`/the capture log after updating rather than assuming this
+is now perfect.
 
 There's also a **Send debug handshake now** button, for sending exactly one
 handshake on demand instead of waiting for the periodic timer -- useful for
-a single closely-watched test.
+a single closely-watched test. It waits for the same quiet gap before
+sending.
 
 The **Extended telemetry active** binary sensor tells you whether the
 heater is actually replying with the richer frame (turns on once a valid

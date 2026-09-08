@@ -450,6 +450,7 @@ class StatusModel:
         self.extended_ts = None
         self.cabin_temp = None
         self.cabin_temp_ts = None
+        self.last_frame_ts = None
         self.last_command = None
         persisted = load_persisted()
         self.preheat_minutes = persisted.get("preheat_minutes", preheat_minutes_default)
@@ -462,6 +463,7 @@ class StatusModel:
         type_ = raw[4] if len(raw) > 4 else None
         payload = raw[5:-2]
         with self.lock:
+            self.last_frame_ts = ts
             if dev == 0x04 and type_ == 0x0F and len(payload) == 18:
                 self.status = decode_status_payload(payload)
                 self.status_ts = ts
@@ -518,6 +520,10 @@ class StatusModel:
     def get_capture_log_wanted(self):
         with self.lock:
             return self.capture_log_wanted
+
+    def get_last_frame_ts(self):
+        with self.lock:
+            return self.last_frame_ts
 
     def snapshot(self, auto_snapshot=None, pf_snapshot=None, capture_status=None):
         auto_snapshot = auto_snapshot or {}
@@ -702,9 +708,22 @@ class DebugSender(threading.Thread):
     toward the heater, when debug mode is enabled -- unlocks the extended
     telemetry frame decoded by decode_extended_payload() above.
 
-    UNCONFIRMED whether this is safe to do while the physical panel is also
-    on the bus (see docs/PROTOCOL.md) -- off by default, and DOCS.md says to
-    only enable it while watching the physical panel."""
+    Confirmed on real hardware (a live capture, reconstructing this add-on's
+    own staleness logic against it and matching it second-for-second to
+    Home Assistant's own "Telemetry stale" history): sending the handshake
+    while the panel's own query/reply exchange is mid-flight on the shared
+    heater_port line can corrupt that exchange -- a real 18-byte heater
+    reply was seen missing 2 bytes immediately after a handshake send. It
+    happened on roughly half of the handshake sends, not all -- consistent
+    with a timing collision, not a deterministic effect. To reduce this,
+    the handshake is held until the bus has been quiet for QUIET_GAP
+    seconds (no frame seen from either device) rather than fired blindly on
+    a fixed timer -- see _wait_for_quiet(). This narrows the collision
+    window but doesn't formally prove it's eliminated; still treat this as
+    experimental (see DOCS.md)."""
+
+    QUIET_GAP = 0.25
+    MAX_EXTRA_WAIT = 2.0
 
     def __init__(self, heater_ser, heater_lock, model, capture_log, stop_evt):
         super().__init__(daemon=True, name="debug-sender")
@@ -726,6 +745,20 @@ class DebugSender(threading.Thread):
         except Exception as e:
             log.error("DEBUG PUBR0 send failed: %r", e)
 
+    def _wait_for_quiet(self):
+        deadline = time.time() + self.MAX_EXTRA_WAIT
+        while time.time() < deadline and not self.stop_evt.is_set():
+            last = self.model.get_last_frame_ts()
+            if last is None or time.time() - last >= self.QUIET_GAP:
+                return
+            time.sleep(0.05)
+        # Gave up waiting for a quiet gap -- send anyway rather than
+        # delaying indefinitely if the bus is unusually busy.
+
+    def send_when_quiet(self):
+        self._wait_for_quiet()
+        self.send_once()
+
     def run(self):
         while not self.stop_evt.is_set():
             enabled, interval = self.model.get_debug_settings()
@@ -733,7 +766,7 @@ class DebugSender(threading.Thread):
                 if self.stop_evt.wait(1.0):
                     return
                 continue
-            self.send_once()
+            self.send_when_quiet()
             if self.stop_evt.wait(max(5, interval)):
                 return
 
@@ -1281,7 +1314,7 @@ class Bridge:
         elif suffix == "debug_interval/set":
             self.model.set_debug_interval(float(payload))
         elif suffix == "send_debug_handshake":
-            self.debug_sender.send_once()
+            self.debug_sender.send_when_quiet()
         elif suffix == "capture_log/set":
             wanted = payload.upper() == "ON"
             self.model.set_capture_log_wanted(wanted)

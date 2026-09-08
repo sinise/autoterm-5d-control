@@ -157,20 +157,31 @@ heater began streaming the frame below at ~1/sec, unprompted (no further
 polling needed).
 
 **Update, now tested on the live boat bus with the physical panel
-connected:** the `PUBR0` handshake itself doesn't disrupt the panel's own
-poll cycle -- a real ~64-minute capture with the handshake being re-sent
-periodically showed completely normal panel query/reply traffic the whole
-time. But **the extended telemetry frame it unlocks does confuse the
-physical panel** if the frame is actually relayed to it (observed
-directly: the panel's own polling degraded over about a minute, then
-collapsed to unparseable garbage, while the heater side -- including the
-extended stream itself -- kept working fine throughout). The panel's
-firmware was clearly never built to receive an unsolicited 65-byte frame
-from `dev02` mid-poll-cycle. The debug add-on (from v1.1.0) filters this
-specific frame out of the heater->panel relay direction so it's decoded
-for its own use but never reaches the panel's wire -- see its DOCS.md.
-Sending `PUBR0` itself toward the heater still shares the live bus, so
-treat it as experimental beyond this specific fix, not risk-free.
+connected -- two distinct failure modes found, one fixed, one narrowed:**
+
+1. **The extended telemetry frame confuses the physical panel** if it's
+   actually relayed to it (observed directly: the panel's own polling
+   degraded over about a minute, then collapsed to unparseable garbage,
+   while the heater side -- including the extended stream itself -- kept
+   working fine throughout). The panel's firmware was clearly never built
+   to receive an unsolicited 65-byte frame from `dev02` mid-poll-cycle.
+   **Fixed** in the debug add-on (from v1.1.0): this specific frame is
+   filtered out of the heater->panel relay direction, decoded for the
+   add-on's own use but never forwarded to the panel's wire.
+2. **Sending the `PUBR0` handshake itself can also corrupt the panel's
+   query/reply exchange**, independent of (1) -- confirmed by
+   reconstructing the add-on's own staleness logic against a real capture
+   and matching it second-for-second to Home Assistant's actual
+   stale/OK history, and by finding a real 18-byte heater reply missing 2
+   bytes immediately after a handshake send. Happened on roughly half of
+   handshake sends, not all -- a timing collision between the handshake
+   write and the panel/heater's own in-flight exchange on the shared
+   line, not a guaranteed failure. **Narrowed, not proven eliminated**, in
+   the debug add-on from v1.5.0: the handshake is held until the bus has
+   been quiet for 250ms before sending, rather than fired on a blind
+   timer. Not re-validated against a fresh long capture the way (1) was --
+   treat `PUBR0` as experimental, watch `Telemetry stale` after enabling
+   it.
 
 Frame: `AA | 02 | 3a 00 | 01 | <58-byte payload> | crc16`. Indices below
 are 0-based into that 58-byte payload.

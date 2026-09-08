@@ -65,9 +65,9 @@ datasource baked in above.
 - Status flags: burner active / glow plug / telemetry stale / extended
   telemetry active, as a timeline.
 - **State**, **Mode of operation (named)**, **Fault (extended, named)** --
-  state-timeline panels, one row per possible value (e.g. Mode of
-  operation's row set is Low/Middle/High/each ignition stage/etc). As of
-  this writing these three are showing "No data" -- see the section below.
+  state-timeline panels, each a single numeric series (`State code` / `Mode
+  code` / `Fault code (extended)`) name- and color-mapped entirely in
+  Grafana (value mappings) -- see the section below for why.
 - **Cabin temperature vs. heater output (%)** -- cabin temperature against
   two independent derived "power output" estimates: measured revolutions
   and fuel pump frequency, each normalized against the highest value seen
@@ -82,33 +82,34 @@ datasource baked in above.
   ~5-10 points during steady mid-to-high combustion. Only extended-frame
   fields, so only populated while Extended telemetry active is on.
 
-## `State`/`Mode of operation`/`Fault (extended, named)` -- currently showing "No data"
+## `State`/`Mode of operation`/`Fault (extended, named)` -- why these are numeric-mapped, not `enum`-exported
 
-These three are text-valued (e.g. "idle", "High", "glow plug warming up"),
-and Prometheus/VictoriaMetrics can only store numbers -- Home Assistant's
-exporter used to silently drop them entirely. Fixed in `autoterm-debug-addon`
-1.2.0: these are now declared as MQTT `enum` sensors (`device_class: enum`
-+ an explicit `options` list), which HA's Prometheus integration exports
-the same way it already exports the climate entity's `mode`/`action` -- a
-separate boolean series per possible value (e.g.
-`homeassistant_climate_mode{mode="heat"}` / `{mode="off"}`).
-
-**What's not yet confirmed**: the exact metric name and label key a plain
-`sensor`-domain enum uses -- there's no existing example of one on this
-instance to check against (climate's `mode`/`action` are entity-specific
-attribute names, not necessarily what a generic sensor's own enum state
-uses). The three panels above are written assuming metric name
-`homeassistant_sensor_state` (the same bucket the other unitless sensors
-already use) with a `state="<value>"` label, e.g.:
+These three are text-valued (e.g. "idle", "High", "glow plug warming up").
+The first attempt (`autoterm-debug-addon` 1.2.0) declared them as MQTT
+`enum` sensors (`device_class: enum` + an `options` list), on the theory
+that HA's Prometheus integration would export them the same way it already
+exports the climate entity's `mode`/`action` (a separate boolean series per
+possible value). **That theory was wrong** -- confirmed via Explore against
+a real instance:
 
 ```
-homeassistant_sensor_state{entity="sensor.autoterm_5d_heater_state", state="idle"} 1
+homeassistant_entity_available{entity="sensor.autoterm_5d_heater_state", ...}
+homeassistant_last_updated_time_seconds{entity="sensor.autoterm_5d_heater_state", ...}
+homeassistant_state_change_total{entity="sensor.autoterm_5d_heater_state", ...}
 ```
 
-**To verify**: after updating the add-on to 1.2.0+ and letting it run for a
-minute, repeat the same Explore metrics-browser search used to build the
-rest of this dashboard, this time for `sensor.autoterm_5d_heater_state` (or
-`_mode_of_operation` / `_fault_extended_named`). If the real metric/label
-names differ from the guess above, only the `expr` in these three panels
-needs updating -- everything else in the dashboard is already confirmed
-against real metric names.
+HA tracks these entities (availability, last-updated, state-change count)
+but never exports their actual text *value* as a metric at all -- unlike
+climate's `mode`/`action`, which do get a value-carrying metric. Generic
+`sensor`-domain enums just aren't given that treatment.
+
+**The actual fix** (`autoterm-debug-addon` 1.4.0): three new *numeric*
+sensors -- `State code`, `Mode code` (`state*10 + substate`), and `Fault
+code (extended)` -- that export exactly like the already-working `Fault
+code`/`Engine state`/`Relay state` sensors always did (plain numbers have
+never been the problem, only text was). The three panels above query these
+numeric sensors and do the number-to-name-and-color translation entirely in
+Grafana, via each panel's own `fieldConfig.defaults.mappings` (built from
+the same `STATE_NAMES`/`EXT_MODE_TABLE`/`EXT_FAULT_NAMES` tables the
+add-on itself uses) -- not dependent on HA's Prometheus exporter for that
+translation at all.

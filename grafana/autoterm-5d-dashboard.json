@@ -1487,8 +1487,8 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_state\"}",
-          "legendFormat": "{{state}}",
+          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_state_code\"}",
+          "legendFormat": "State",
           "refId": "A",
           "format": "time_series"
         }
@@ -1502,14 +1502,29 @@
               "type": "value",
               "options": {
                 "0": {
-                  "text": "OFF",
-                  "color": "red",
+                  "text": "idle",
+                  "color": "blue",
                   "index": 0
                 },
-                "1": {
-                  "text": "ON",
+                "2": {
+                  "text": "running",
                   "color": "green",
                   "index": 1
+                },
+                "3": {
+                  "text": "late-run",
+                  "color": "orange",
+                  "index": 2
+                },
+                "4": {
+                  "text": "cooldown",
+                  "color": "red",
+                  "index": 3
+                },
+                "5": {
+                  "text": "final-shutdown",
+                  "color": "purple",
+                  "index": 4
                 }
               }
             }
@@ -1523,7 +1538,7 @@
       },
       "options": {
         "mergeValues": true,
-        "showValue": "never",
+        "showValue": "always",
         "rowHeight": 0.9,
         "legend": {
           "displayMode": "list",
@@ -1551,8 +1566,8 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_mode_of_operation\"}",
-          "legendFormat": "{{state}}",
+          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_mode_code\"}",
+          "legendFormat": "Mode of operation (named)",
           "refId": "A",
           "format": "time_series"
         }
@@ -1566,14 +1581,224 @@
               "type": "value",
               "options": {
                 "0": {
-                  "text": "OFF",
-                  "color": "red",
+                  "text": "unknown",
+                  "color": "blue",
                   "index": 0
                 },
                 "1": {
-                  "text": "ON",
+                  "text": "waiting for a command",
                   "color": "green",
                   "index": 1
+                },
+                "2": {
+                  "text": "cooling the flame sensor",
+                  "color": "orange",
+                  "index": 2
+                },
+                "3": {
+                  "text": "air blowing",
+                  "color": "red",
+                  "index": 3
+                },
+                "4": {
+                  "text": "fuel pumping",
+                  "color": "purple",
+                  "index": 4
+                },
+                "5": {
+                  "text": "unknown",
+                  "color": "yellow",
+                  "index": 5
+                },
+                "6": {
+                  "text": "unknown",
+                  "color": "light-blue",
+                  "index": 6
+                },
+                "7": {
+                  "text": "unknown",
+                  "color": "semi-dark-green",
+                  "index": 7
+                },
+                "8": {
+                  "text": "unknown",
+                  "color": "dark-orange",
+                  "index": 8
+                },
+                "9": {
+                  "text": "unknown",
+                  "color": "dark-red",
+                  "index": 9
+                },
+                "10": {
+                  "text": "waiting for temperature reduction",
+                  "color": "light-purple",
+                  "index": 10
+                },
+                "11": {
+                  "text": "locked",
+                  "color": "dark-yellow",
+                  "index": 11
+                },
+                "12": {
+                  "text": "unknown",
+                  "color": "super-light-blue",
+                  "index": 12
+                },
+                "13": {
+                  "text": "unknown",
+                  "color": "light-green",
+                  "index": 13
+                },
+                "14": {
+                  "text": "unknown",
+                  "color": "light-orange",
+                  "index": 14
+                },
+                "15": {
+                  "text": "unknown",
+                  "color": "light-red",
+                  "index": 15
+                },
+                "16": {
+                  "text": "unknown",
+                  "color": "light-purple",
+                  "index": 16
+                },
+                "17": {
+                  "text": "unknown",
+                  "color": "super-light-green",
+                  "index": 17
+                },
+                "18": {
+                  "text": "unknown",
+                  "color": "super-light-orange",
+                  "index": 18
+                },
+                "19": {
+                  "text": "unknown",
+                  "color": "super-light-red",
+                  "index": 19
+                },
+                "20": {
+                  "text": "cooling",
+                  "color": "blue",
+                  "index": 20
+                },
+                "21": {
+                  "text": "glow plug warming up",
+                  "color": "green",
+                  "index": 21
+                },
+                "22": {
+                  "text": "preparation for ignition",
+                  "color": "orange",
+                  "index": 22
+                },
+                "23": {
+                  "text": "Ignition 1",
+                  "color": "red",
+                  "index": 23
+                },
+                "24": {
+                  "text": "Ignition 2",
+                  "color": "purple",
+                  "index": 24
+                },
+                "25": {
+                  "text": "blowing",
+                  "color": "yellow",
+                  "index": 25
+                },
+                "26": {
+                  "text": "combustion chamber heating",
+                  "color": "light-blue",
+                  "index": 26
+                },
+                "27": {
+                  "text": "blowing",
+                  "color": "semi-dark-green",
+                  "index": 27
+                },
+                "28": {
+                  "text": "unknown",
+                  "color": "dark-orange",
+                  "index": 28
+                },
+                "29": {
+                  "text": "unknown",
+                  "color": "dark-red",
+                  "index": 29
+                },
+                "30": {
+                  "text": "low",
+                  "color": "light-purple",
+                  "index": 30
+                },
+                "31": {
+                  "text": "unknown",
+                  "color": "dark-yellow",
+                  "index": 31
+                },
+                "32": {
+                  "text": "High",
+                  "color": "super-light-blue",
+                  "index": 32
+                },
+                "33": {
+                  "text": "unknown",
+                  "color": "light-green",
+                  "index": 33
+                },
+                "34": {
+                  "text": "blowing",
+                  "color": "light-orange",
+                  "index": 34
+                },
+                "35": {
+                  "text": "waiting",
+                  "color": "light-red",
+                  "index": 35
+                },
+                "36": {
+                  "text": "blowing",
+                  "color": "light-purple",
+                  "index": 36
+                },
+                "37": {
+                  "text": "pump only",
+                  "color": "super-light-green",
+                  "index": 37
+                },
+                "38": {
+                  "text": "middle",
+                  "color": "super-light-orange",
+                  "index": 38
+                },
+                "39": {
+                  "text": "unknown",
+                  "color": "super-light-red",
+                  "index": 39
+                },
+                "40": {
+                  "text": "blowing",
+                  "color": "blue",
+                  "index": 40
+                },
+                "41": {
+                  "text": "blowing",
+                  "color": "green",
+                  "index": 41
+                },
+                "42": {
+                  "text": "blowing",
+                  "color": "orange",
+                  "index": 42
+                },
+                "43": {
+                  "text": "shutting down",
+                  "color": "red",
+                  "index": 43
                 }
               }
             }
@@ -1587,7 +1812,7 @@
       },
       "options": {
         "mergeValues": true,
-        "showValue": "never",
+        "showValue": "always",
         "rowHeight": 0.9,
         "legend": {
           "displayMode": "list",
@@ -1615,13 +1840,13 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_fault_extended_named\"}",
-          "legendFormat": "{{state}}",
+          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_fault_code_extended\"}",
+          "legendFormat": "Fault (extended, named)",
           "refId": "A",
           "format": "time_series"
         }
       ],
-      "description": "Named fault from the extended frame -- partial table, only 'No faults' cross-validated so far. The numeric Fault code panel above is the more reliable one for alerting.",
+      "description": "Named fault from the extended frame -- partial table, only 'No faults' cross-validated so far. The numeric Fault code panel above (base frame) is the more reliable one for alerting.",
       "fieldConfig": {
         "defaults": {
           "unit": "none",
@@ -1630,14 +1855,134 @@
               "type": "value",
               "options": {
                 "0": {
-                  "text": "OFF",
-                  "color": "red",
+                  "text": "No faults",
+                  "color": "blue",
                   "index": 0
                 },
                 "1": {
-                  "text": "ON",
+                  "text": "Overheat",
                   "color": "green",
                   "index": 1
+                },
+                "2": {
+                  "text": "Possible overheat",
+                  "color": "orange",
+                  "index": 2
+                },
+                "3": {
+                  "text": "Overheat",
+                  "color": "red",
+                  "index": 3
+                },
+                "4": {
+                  "text": "Liquid temperature sensor",
+                  "color": "purple",
+                  "index": 4
+                },
+                "5": {
+                  "text": "Flame temperature sensor",
+                  "color": "yellow",
+                  "index": 5
+                },
+                "6": {
+                  "text": "Board temperature sensor",
+                  "color": "light-blue",
+                  "index": 6
+                },
+                "9": {
+                  "text": "Malfunction of a glow plug",
+                  "color": "semi-dark-green",
+                  "index": 7
+                },
+                "10": {
+                  "text": "Turnover mismatch",
+                  "color": "dark-orange",
+                  "index": 8
+                },
+                "12": {
+                  "text": "Increased supply voltage",
+                  "color": "dark-red",
+                  "index": 9
+                },
+                "13": {
+                  "text": "No ignition",
+                  "color": "light-purple",
+                  "index": 10
+                },
+                "14": {
+                  "text": "Faulty water pump",
+                  "color": "dark-yellow",
+                  "index": 11
+                },
+                "15": {
+                  "text": "Low voltage",
+                  "color": "super-light-blue",
+                  "index": 12
+                },
+                "16": {
+                  "text": "Blowing time exceeded",
+                  "color": "light-green",
+                  "index": 13
+                },
+                "17": {
+                  "text": "Faulty fuel pump",
+                  "color": "light-orange",
+                  "index": 14
+                },
+                "20": {
+                  "text": "No connection",
+                  "color": "light-red",
+                  "index": 15
+                },
+                "22": {
+                  "text": "Faulty fuel pump",
+                  "color": "light-purple",
+                  "index": 16
+                },
+                "24": {
+                  "text": "Temperature sensor off-scale",
+                  "color": "super-light-green",
+                  "index": 17
+                },
+                "25": {
+                  "text": "Temperature growing too fast",
+                  "color": "super-light-orange",
+                  "index": 18
+                },
+                "26": {
+                  "text": "Fan overloaded",
+                  "color": "super-light-red",
+                  "index": 19
+                },
+                "27": {
+                  "text": "Fan. No rotation",
+                  "color": "blue",
+                  "index": 20
+                },
+                "28": {
+                  "text": "Fan. Autorotation",
+                  "color": "green",
+                  "index": 21
+                },
+                "29": {
+                  "text": "Flame breaks too often",
+                  "color": "orange",
+                  "index": 22
+                },
+                "30": {
+                  "text": "No connection",
+                  "color": "red",
+                  "index": 23
+                },
+                "37": {
+                  "text": "Overheat locking",
+                  "color": "purple",
+                  "index": 24
+                },
+                "78": {
+                  "text": "Flame break during running",
+                  "color": "yellow",
+                  "index": 25
                 }
               }
             }
@@ -1651,7 +1996,7 @@
       },
       "options": {
         "mergeValues": true,
-        "showValue": "never",
+        "showValue": "always",
         "rowHeight": 0.9,
         "legend": {
           "displayMode": "list",

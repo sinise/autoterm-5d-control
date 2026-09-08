@@ -1658,6 +1658,153 @@
           "placement": "bottom"
         }
       }
+    },
+    {
+      "id": 18,
+      "title": "Cabin temperature vs. heater output (%)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 71
+      },
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "cfxh0obaj30g0f"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
+          },
+          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_cabin_temperature\"}",
+          "legendFormat": "Cabin temperature",
+          "refId": "A",
+          "format": "time_series"
+        },
+        {
+          "datasource": {
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
+          },
+          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_measured_revolutions\"} / max_over_time(homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_measured_revolutions\"}[$__range]) * 100",
+          "legendFormat": "Effect from revolutions (%)",
+          "refId": "B",
+          "format": "time_series"
+        },
+        {
+          "datasource": {
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
+          },
+          "expr": "homeassistant_sensor_unit_hz{entity=\"sensor.autoterm_5d_heater_fuel_pump_frequency\"} / max_over_time(homeassistant_sensor_unit_hz{entity=\"sensor.autoterm_5d_heater_fuel_pump_frequency\"}[$__range]) * 100",
+          "legendFormat": "Effect from fuel frequency (%)",
+          "refId": "C",
+          "format": "time_series"
+        }
+      ],
+      "description": "100% = highest value seen within the currently displayed time range (auto-adjusts as you change the dashboard's time window -- there's no known manufacturer spec to normalize against instead). The two output estimates diverge outside steady combustion -- revolutions track blower/fan activity (nonzero during pre-ignition purge and post-shutdown cooldown), fuel frequency tracks actual heat output (correctly 0 in both cases) -- kept as two series rather than one for exactly that reason. Only extended-frame fields, so only populated while Extended telemetry active is on.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "left"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "C"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        }
+      }
     }
   ],
   "refresh": "30s",

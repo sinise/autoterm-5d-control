@@ -66,9 +66,23 @@ datasource baked in above.
   telemetry active, as a timeline.
 - **State**, **Mode of operation (named)**, **Fault (extended, named)** --
   state-timeline panels, one row per possible value (e.g. Mode of
-  operation's row set is Low/Middle/High/each ignition stage/etc).
+  operation's row set is Low/Middle/High/each ignition stage/etc). As of
+  this writing these three are showing "No data" -- see the section below.
+- **Cabin temperature vs. heater output (%)** -- cabin temperature against
+  two independent derived "power output" estimates: measured revolutions
+  and fuel pump frequency, each normalized against the highest value seen
+  within the panel's own displayed time range (`$__range` -- self-adjusting
+  as you change the dashboard's time window, since there's no known
+  manufacturer spec to normalize against instead). Kept as two series, not
+  collapsed to one -- checked against real capture data and they diverge
+  sharply outside steady combustion: revolutions-based reads ~26% during
+  the pre-ignition glow-plug phase and ~69% during the post-shutdown
+  cooldown purge (fuel is 0 in both, no heat is actually being produced),
+  while fuel-based correctly reads 0% in both cases. They only agree within
+  ~5-10 points during steady mid-to-high combustion. Only extended-frame
+  fields, so only populated while Extended telemetry active is on.
 
-## `State`/`Mode of operation`/`Fault (extended, named)` -- query shape not yet confirmed
+## `State`/`Mode of operation`/`Fault (extended, named)` -- currently showing "No data"
 
 These three are text-valued (e.g. "idle", "High", "glow plug warming up"),
 and Prometheus/VictoriaMetrics can only store numbers -- Home Assistant's

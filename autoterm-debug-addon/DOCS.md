@@ -1,25 +1,27 @@
-# Autoterm 5D Debug add-on
+# Autoterm Heater Debug add-on
 
-Everything the regular [Autoterm 5D add-on](../autoterm-addon/DOCS.md) does,
-plus tools for continuing the protocol reverse-engineering: optional
-extended-telemetry probing, a full raw-traffic capture log, and sensors for
-every field decoded so far. This is **not** needed for normal day-to-day
-heater control -- install the regular add-on for that. Install this one
-instead of it when you want the extra data or are helping debug the
-protocol further.
+Everything the regular [Autoterm Heater add-on](../autoterm-addon/DOCS.md)
+does, plus tools for continuing the protocol reverse-engineering: optional
+extended-telemetry probing across 19 vendor heater profiles, a full
+raw-traffic capture log, and sensors for every field decoded so far. This
+is **not** needed for normal day-to-day heater control -- install the
+regular add-on for that. Install this one instead of it when you want the
+extra data or are helping debug the protocol further, including on heater
+models other than the Autoterm 5D / Flow 5 this project was originally
+built against.
 
 Full protocol derivation lives in `docs/PROTOCOL.md` in the
-[main repo](https://github.com/sinise/autoterm-5d-control) -- read it,
+[main repo](https://github.com/sinise/autoterm-heater-control) -- read it,
 especially "Extended diagnostic-mode telemetry", before enabling debug mode.
 
 ## Before you install
 
 Same prerequisites as the regular add-on: this owns both UART ports
 directly, so **do not** run it alongside `autoterm_web.py`/`autoterm_proxy.py`
-or the regular Autoterm 5D add-on on the same ports -- only one process can
-hold a serial port open. Install **either** the regular add-on **or** this
-one, not both at once (they'll fail to start if you try -- the second one
-to start won't be able to open the ports).
+or the regular Autoterm Heater add-on on the same ports -- only one process
+can hold a serial port open. Install **either** the regular add-on **or**
+this one, not both at once (they'll fail to start if you try -- the second
+one to start won't be able to open the ports).
 
 This add-on is safe to install and run with debug mode and capture logging
 both left **off** (the default) -- in that mode it behaves exactly like the

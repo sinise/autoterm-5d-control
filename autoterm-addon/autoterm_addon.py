@@ -39,7 +39,7 @@ from autoterm_protocol import Framer, KNOWN_DEV, crc_bytes
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("autoterm")
 
-NODE_ID = "autoterm5d"
+NODE_ID = "autoterm_heater"
 DISCOVERY_PREFIX = "homeassistant"
 STATE_TOPIC = f"autoterm/{NODE_ID}/state"
 AVAILABILITY_TOPIC = f"autoterm/{NODE_ID}/availability"
@@ -57,9 +57,9 @@ STATE_NAMES = {
 
 DEVICE_INFO = {
     "identifiers": [NODE_ID],
-    "name": "Autoterm 5D Heater",
+    "name": "Autoterm Heater",
     "manufacturer": "Autoterm",
-    "model": "5D",
+    "model": "Diesel heater",
 }
 
 

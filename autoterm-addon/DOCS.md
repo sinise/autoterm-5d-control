@@ -1,10 +1,17 @@
-# Autoterm 5D add-on
+# Autoterm Heater add-on
 
-Bridges an Autoterm 5D diesel heater's UART link to Home Assistant over
-MQTT. Full protocol derivation lives in `docs/PROTOCOL.md` in the
-[main repo](https://github.com/sinise/autoterm-5d-control) -- read it if you
-want to understand *why* the commands below are safe, or if you're adapting
-this to different hardware.
+Bridges an Autoterm-family diesel heater's UART link to Home Assistant
+over MQTT. Confirmed against a real Autoterm 5D / Flow 5 (internally
+BINAR-5S) unit; the base protocol this add-on relies on (frame format,
+commands) is not yet independently confirmed on other models -- see
+`docs/PROTOCOL.md`. If you're on a different model, the
+[Autoterm Heater Debug](../autoterm-debug-addon/) add-on's "Heater
+profile" option covers extended telemetry for 19 vendor profiles, useful
+for helping validate this on other hardware. Full protocol derivation
+lives in `docs/PROTOCOL.md` in the
+[main repo](https://github.com/sinise/autoterm-heater-control) -- read it
+if you want to understand *why* the commands below are safe, or if you're
+adapting this to different hardware.
 
 ## Before you install
 
@@ -152,7 +159,7 @@ track what you expect.
 
 ## What you get
 
-A single "Autoterm 5D Heater" device in Home Assistant with:
+A single "Autoterm Heater" device in Home Assistant with:
 
 - **Sensors**: State (idle/running/late-run/cooldown/final-shutdown), Fault
   code, Cabin temperature, Coolant temperature, Elapsed run time

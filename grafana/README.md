@@ -1,6 +1,6 @@
 # Grafana dashboard
 
-`autoterm-5d-dashboard.json` -- a dashboard for the Autoterm 5D Heater
+`autoterm-heater-dashboard.json` -- a dashboard for the Autoterm Heater
 metrics, built against the specific metric names Home Assistant's built-in
 Prometheus integration produces for these entities (confirmed against a
 real instance via Grafana Explore, not guessed).
@@ -10,8 +10,8 @@ real instance via Grafana Explore, not guessed).
 - Home Assistant's [Prometheus integration](https://www.home-assistant.io/integrations/prometheus/)
   enabled, scraped into VictoriaMetrics (e.g. via vmagent or Prometheus
   remote_write).
-- The [Autoterm 5D](../autoterm-addon/) or
-  [Autoterm 5D Debug](../autoterm-debug-addon/) add-on installed and its
+- The [Autoterm Heater](../autoterm-addon/) or
+  [Autoterm Heater Debug](../autoterm-debug-addon/) add-on installed and its
   entities present in Home Assistant. Several panels (Defined/Measured
   revolutions, Fuel pump frequency, Flame/Liquid/Overheat/Board
   temperature, Fan current) only populate while the **Debug** add-on's
@@ -41,7 +41,7 @@ change `"type": "victoriametrics-metrics-datasource"` to `"type":
 ## Importing
 
 Grafana -> Dashboards -> New -> Import -> upload
-`autoterm-5d-dashboard.json`. No prompts -- it should just work against the
+`autoterm-heater-dashboard.json`. No prompts -- it should just work against the
 datasource baked in above.
 
 ## Panels
@@ -93,9 +93,9 @@ possible value). **That theory was wrong** -- confirmed via Explore against
 a real instance:
 
 ```
-homeassistant_entity_available{entity="sensor.autoterm_5d_heater_state", ...}
-homeassistant_last_updated_time_seconds{entity="sensor.autoterm_5d_heater_state", ...}
-homeassistant_state_change_total{entity="sensor.autoterm_5d_heater_state", ...}
+homeassistant_entity_available{entity="sensor.autoterm_heater_state", ...}
+homeassistant_last_updated_time_seconds{entity="sensor.autoterm_heater_state", ...}
+homeassistant_state_change_total{entity="sensor.autoterm_heater_state", ...}
 ```
 
 HA tracks these entities (availability, last-updated, state-change count)

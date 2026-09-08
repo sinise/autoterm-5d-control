@@ -1,8 +1,8 @@
 #!/bin/bash
-# Autoterm 5D control -- installer.
+# Autoterm Heater Control -- installer.
 #
 # Usage (fresh machine, one-liner):
-#   curl -fsSL https://raw.githubusercontent.com/sinise/autoterm-5d-control/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/sinise/autoterm-heater-control/main/install.sh | bash
 #
 # Usage (already cloned the repo):
 #   ./install.sh
@@ -17,7 +17,7 @@
 #
 # Override defaults with environment variables:
 #   AUTOTERM_REPO_URL     git remote to clone (default: this project's github)
-#   AUTOTERM_INSTALL_DIR  where to put it (default: $HOME/autoterm-5d-control)
+#   AUTOTERM_INSTALL_DIR  where to put it (default: $HOME/autoterm-heater-control)
 #   AUTOTERM_PANEL_PORT   serial port wired to the panel  (default: /dev/ttyUSB1)
 #   AUTOTERM_HEATER_PORT  serial port wired to the heater (default: /dev/ttyUSB3)
 #
@@ -28,8 +28,8 @@
 
 set -euo pipefail
 
-REPO_URL="${AUTOTERM_REPO_URL:-https://github.com/sinise/autoterm-5d-control.git}"
-INSTALL_DIR="${AUTOTERM_INSTALL_DIR:-$HOME/autoterm-5d-control}"
+REPO_URL="${AUTOTERM_REPO_URL:-https://github.com/sinise/autoterm-heater-control.git}"
+INSTALL_DIR="${AUTOTERM_INSTALL_DIR:-$HOME/autoterm-heater-control}"
 PANEL_PORT="${AUTOTERM_PANEL_PORT:-/dev/ttyUSB1}"
 HEATER_PORT="${AUTOTERM_HEATER_PORT:-/dev/ttyUSB3}"
 
@@ -69,7 +69,7 @@ SERVICE_FILE=/etc/systemd/system/autoterm-web.service
 log "Writing $SERVICE_FILE..."
 sudo tee "$SERVICE_FILE" > /dev/null <<EOF
 [Unit]
-Description=Autoterm 5D heater inline proxy + web control
+Description=Autoterm heater inline proxy + web control
 After=network.target
 StartLimitIntervalSec=300
 StartLimitBurst=10

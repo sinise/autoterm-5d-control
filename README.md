@@ -1,9 +1,13 @@
-# Autoterm 5D control
+# Autoterm Heater Control
 
 Reverse-engineered UART protocol, a passive monitor, an inline proxy, and a
-web dashboard for controlling an **Autoterm 5D diesel heater** (and its
+web dashboard for controlling an **Autoterm-family diesel heater** (and its
 comfort panel) from a Raspberry Pi -- built for a boat installation, but the
-protocol and tooling aren't boat-specific.
+protocol and tooling aren't boat-specific. Confirmed against a real
+**Autoterm 5D / Flow 5** (internally BINAR-5S) unit; the [Home Assistant
+debug add-on](autoterm-debug-addon/) extends extended-telemetry decoding
+to 19 vendor heater profiles, only the Flow 5/BINAR-5S family of which is
+independently confirmed -- see its DOCS.md.
 
 Status: passive decoding and live command injection (start/stop) are
 **working and verified against real hardware**. A Home Assistant add-on is
@@ -71,7 +75,7 @@ reading, rather than trusting a port number.
 ### One-line install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sinise/autoterm-5d-control/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/sinise/autoterm-heater-control/main/install.sh | bash
 ```
 
 This installs OS dependencies, clones the repo, adds you to the `dialout`
@@ -83,8 +87,8 @@ assignment (`AUTOTERM_PANEL_PORT`, `AUTOTERM_HEATER_PORT`, etc).
 ### Manual install
 
 ```bash
-git clone https://github.com/sinise/autoterm-5d-control.git
-cd autoterm-5d-control
+git clone https://github.com/sinise/autoterm-heater-control.git
+cd autoterm-heater-control
 ./install.sh
 ```
 

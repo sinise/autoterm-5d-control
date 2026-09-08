@@ -1,12 +1,13 @@
-name: Autoterm 5D Debug
-version: "1.6.0"
-slug: autoterm5d_debug
+name: Autoterm Heater Debug
+version: "2.0.0"
+slug: autoterm_heater_debug
 description: >-
-  Everything the Autoterm 5D add-on does, plus optional periodic extended
-  telemetry (vendor diagnostic-mode) probing, full raw traffic capture to
-  a downloadable log, and sensors for every known extended field. For
-  protocol reverse-engineering; not needed for normal day-to-day use.
-url: https://github.com/sinise/autoterm-5d-control
+  Everything the Autoterm Heater add-on does, plus optional periodic
+  extended telemetry (vendor diagnostic-mode) probing across 19 heater
+  models, full raw traffic capture to a downloadable log, and sensors for
+  every known extended field. For protocol reverse-engineering; not
+  needed for normal day-to-day use.
+url: https://github.com/sinise/autoterm-heater-control
 arch:
   - aarch64
   - amd64

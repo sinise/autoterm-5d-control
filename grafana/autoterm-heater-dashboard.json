@@ -42,7 +42,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_cabin_temperature\"}",
+          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_heater_cabin_temperature\"}",
           "legendFormat": "Cabin temperature",
           "refId": "A",
           "format": "time_series"
@@ -107,7 +107,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_coolant_temperature\"}",
+          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_heater_coolant_temperature\"}",
           "legendFormat": "Coolant temperature",
           "refId": "A",
           "format": "time_series"
@@ -168,7 +168,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_voltage_v{entity=\"sensor.autoterm_5d_heater_supply_voltage\"}",
+          "expr": "homeassistant_sensor_voltage_v{entity=\"sensor.autoterm_heater_supply_voltage\"}",
           "legendFormat": "Supply voltage",
           "refId": "A",
           "format": "time_series"
@@ -234,7 +234,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_fault_code\"}",
+          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_heater_fault_code\"}",
           "legendFormat": "Fault code",
           "refId": "A",
           "format": "time_series"
@@ -295,7 +295,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_unit_min{entity=\"sensor.autoterm_5d_heater_elapsed_run_time\"}",
+          "expr": "homeassistant_sensor_unit_min{entity=\"sensor.autoterm_heater_elapsed_run_time\"}",
           "legendFormat": "Elapsed run time",
           "refId": "A",
           "format": "time_series"
@@ -352,7 +352,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_binary_sensor_state{entity=\"binary_sensor.autoterm_5d_heater_burner_active\"}",
+          "expr": "homeassistant_binary_sensor_state{entity=\"binary_sensor.autoterm_heater_burner_active\"}",
           "legendFormat": "Burner active",
           "refId": "A",
           "format": "time_series"
@@ -430,7 +430,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_flame_temperature\"}",
+          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_heater_flame_temperature\"}",
           "legendFormat": "Flame temperature",
           "refId": "A",
           "format": "time_series"
@@ -440,7 +440,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_coolant_temperature\"}",
+          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_heater_coolant_temperature\"}",
           "legendFormat": "Coolant temperature",
           "refId": "B",
           "format": "time_series"
@@ -450,7 +450,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_measured_revolutions\"}",
+          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_heater_measured_revolutions\"}",
           "legendFormat": "Measured revolutions",
           "refId": "C",
           "format": "time_series"
@@ -460,7 +460,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_unit_hz{entity=\"sensor.autoterm_5d_heater_fuel_pump_frequency\"} * 50",
+          "expr": "homeassistant_sensor_unit_hz{entity=\"sensor.autoterm_heater_fuel_pump_frequency\"} * 50",
           "legendFormat": "Fuel pump frequency (x50, see panel description)",
           "refId": "D",
           "format": "time_series"
@@ -610,7 +610,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_flame_temperature\"}",
+          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_heater_flame_temperature\"}",
           "legendFormat": "Flame temperature",
           "refId": "A",
           "format": "time_series"
@@ -620,7 +620,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_liquid_temperature_extended\"}",
+          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_heater_liquid_temperature_extended\"}",
           "legendFormat": "Liquid temperature (extended)",
           "refId": "B",
           "format": "time_series"
@@ -630,7 +630,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_coolant_temperature\"}",
+          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_heater_coolant_temperature\"}",
           "legendFormat": "Coolant temperature",
           "refId": "C",
           "format": "time_series"
@@ -640,7 +640,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_cabin_temperature\"}",
+          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_heater_cabin_temperature\"}",
           "legendFormat": "Cabin temperature",
           "refId": "D",
           "format": "time_series"
@@ -650,7 +650,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_board_temperature\"}",
+          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_heater_board_temperature\"}",
           "legendFormat": "Board temperature",
           "refId": "E",
           "format": "time_series"
@@ -660,7 +660,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_overheat_sensor_temperature\"}",
+          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_heater_overheat_sensor_temperature\"}",
           "legendFormat": "Overheat sensor temperature",
           "refId": "F",
           "format": "time_series"
@@ -856,7 +856,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_defined_revolutions\"}",
+          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_heater_defined_revolutions\"}",
           "legendFormat": "Defined revolutions",
           "refId": "A",
           "format": "time_series"
@@ -866,7 +866,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_measured_revolutions\"}",
+          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_heater_measured_revolutions\"}",
           "legendFormat": "Measured revolutions",
           "refId": "B",
           "format": "time_series"
@@ -970,7 +970,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_unit_hz{entity=\"sensor.autoterm_5d_heater_fuel_pump_frequency\"}",
+          "expr": "homeassistant_sensor_unit_hz{entity=\"sensor.autoterm_heater_fuel_pump_frequency\"}",
           "legendFormat": "Fuel pump frequency",
           "refId": "A",
           "format": "time_series"
@@ -1051,7 +1051,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_voltage_v{entity=\"sensor.autoterm_5d_heater_supply_voltage\"}",
+          "expr": "homeassistant_sensor_voltage_v{entity=\"sensor.autoterm_heater_supply_voltage\"}",
           "legendFormat": "Supply voltage",
           "refId": "A",
           "format": "time_series"
@@ -1061,7 +1061,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_current_ma{entity=\"sensor.autoterm_5d_heater_fan_current\"}",
+          "expr": "homeassistant_sensor_current_ma{entity=\"sensor.autoterm_heater_fan_current\"}",
           "legendFormat": "Fan current",
           "refId": "B",
           "format": "time_series"
@@ -1165,7 +1165,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_unit_min{entity=\"sensor.autoterm_5d_heater_elapsed_run_time\"}",
+          "expr": "homeassistant_sensor_unit_min{entity=\"sensor.autoterm_heater_elapsed_run_time\"}",
           "legendFormat": "Elapsed run time",
           "refId": "A",
           "format": "time_series"
@@ -1175,7 +1175,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_unit_min{entity=\"sensor.autoterm_5d_heater_running_time_extended\"}",
+          "expr": "homeassistant_sensor_unit_min{entity=\"sensor.autoterm_heater_running_time_extended\"}",
           "legendFormat": "Running time (extended)",
           "refId": "B",
           "format": "time_series"
@@ -1279,7 +1279,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_engine_state\"}",
+          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_heater_engine_state\"}",
           "legendFormat": "Engine state",
           "refId": "A",
           "format": "time_series"
@@ -1289,7 +1289,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_relay_state\"}",
+          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_heater_relay_state\"}",
           "legendFormat": "Relay state",
           "refId": "B",
           "format": "time_series"
@@ -1393,7 +1393,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_binary_sensor_state{entity=\"binary_sensor.autoterm_5d_heater_burner_active\"}",
+          "expr": "homeassistant_binary_sensor_state{entity=\"binary_sensor.autoterm_heater_burner_active\"}",
           "legendFormat": "Burner active",
           "refId": "A",
           "format": "time_series"
@@ -1403,7 +1403,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_binary_sensor_state{entity=\"binary_sensor.autoterm_5d_heater_glow_plug\"}",
+          "expr": "homeassistant_binary_sensor_state{entity=\"binary_sensor.autoterm_heater_glow_plug\"}",
           "legendFormat": "Glow plug",
           "refId": "B",
           "format": "time_series"
@@ -1413,7 +1413,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_binary_sensor_state{entity=\"binary_sensor.autoterm_5d_heater_telemetry_stale\"}",
+          "expr": "homeassistant_binary_sensor_state{entity=\"binary_sensor.autoterm_heater_telemetry_stale\"}",
           "legendFormat": "Telemetry stale",
           "refId": "C",
           "format": "time_series"
@@ -1423,7 +1423,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_binary_sensor_state{entity=\"binary_sensor.autoterm_5d_heater_extended_telemetry_active\"}",
+          "expr": "homeassistant_binary_sensor_state{entity=\"binary_sensor.autoterm_heater_extended_telemetry_active\"}",
           "legendFormat": "Extended telemetry active",
           "refId": "D",
           "format": "time_series"
@@ -1487,7 +1487,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_state_code\"}",
+          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_heater_state_code\"}",
           "legendFormat": "State",
           "refId": "A",
           "format": "time_series"
@@ -1566,7 +1566,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_mode_code\"}",
+          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_heater_mode_code\"}",
           "legendFormat": "Mode of operation (named)",
           "refId": "A",
           "format": "time_series"
@@ -1840,7 +1840,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_fault_code_extended\"}",
+          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_heater_fault_code_extended\"}",
           "legendFormat": "Fault (extended, named)",
           "refId": "A",
           "format": "time_series"
@@ -2024,7 +2024,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_cabin_temperature\"}",
+          "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_heater_cabin_temperature\"}",
           "legendFormat": "Cabin temperature",
           "refId": "A",
           "format": "time_series"
@@ -2034,7 +2034,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_measured_revolutions\"} / max_over_time(homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_measured_revolutions\"}[$__range]) * 100",
+          "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_heater_measured_revolutions\"} / max_over_time(homeassistant_sensor_state{entity=\"sensor.autoterm_heater_measured_revolutions\"}[$__range]) * 100",
           "legendFormat": "Effect from revolutions (%)",
           "refId": "B",
           "format": "time_series"
@@ -2044,7 +2044,7 @@
             "type": "victoriametrics-metrics-datasource",
             "uid": "cfxh0obaj30g0f"
           },
-          "expr": "homeassistant_sensor_unit_hz{entity=\"sensor.autoterm_5d_heater_fuel_pump_frequency\"} / max_over_time(homeassistant_sensor_unit_hz{entity=\"sensor.autoterm_5d_heater_fuel_pump_frequency\"}[$__range]) * 100",
+          "expr": "homeassistant_sensor_unit_hz{entity=\"sensor.autoterm_heater_fuel_pump_frequency\"} / max_over_time(homeassistant_sensor_unit_hz{entity=\"sensor.autoterm_heater_fuel_pump_frequency\"}[$__range]) * 100",
           "legendFormat": "Effect from fuel frequency (%)",
           "refId": "C",
           "format": "time_series"
@@ -2167,7 +2167,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Autoterm 5D Heater",
+  "title": "Autoterm Heater",
   "uid": "autoterm5d-heater",
   "version": 1,
   "weekStart": ""

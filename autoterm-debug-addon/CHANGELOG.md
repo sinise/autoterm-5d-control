@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.0.0
+
+- **Renamed**, matching the regular add-on's 2.0.0: `Autoterm 5D Debug` ->
+  `Autoterm Heater Debug`, slug `autoterm5d_debug` -> `autoterm_heater_debug`,
+  repo moved to `autoterm-heater-control`. **Breaking**: every Home
+  Assistant entity gets a new entity_id (device name changed from
+  "Autoterm 5D Heater" to "Autoterm Heater") -- existing
+  automations/dashboards/Grafana panels referencing the old
+  `sensor.autoterm_5d_heater_*` entity IDs need updating, and you'll
+  likely need to remove and reinstall this add-on from the renamed
+  repository. `binar_5s`/`binar_5s_next` are now also marked `tested`
+  (same internal codename as `autoterm_flow_5`, byte-identical data).
+
 ## 1.6.0
 
 - Added a "Heater profile" config option: the extended-telemetry decoder

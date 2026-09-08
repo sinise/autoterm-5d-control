@@ -21,7 +21,7 @@ Additional, debug-only features:
     enable it while watching the physical panel.
   - A toggleable raw traffic capture: every parsed frame and every stray
     (unparsed) byte, tagged with who sent it (display, heater, or this
-    add-on itself), written to a human-readable log under /share so it's
+    add-on itself), written to a human-readable log under /config so it's
     reachable from outside the add-on (Samba / File editor / SSH) without
     needing a dashboard of its own.
   - Sensors for every known extended-frame field, plus the existing base
@@ -302,7 +302,7 @@ def save_persisted(data):
 
 # --------------------------------------------------------------------------
 # Raw traffic capture -- toggleable, downloadable log of every message and
-# who sent it. Written under /share (mapped share:rw in config.yaml) so
+# who sent it. Written under /config (mapped config:rw in config.yaml) so
 # it's reachable via Samba / File editor / SSH without this add-on needing
 # a web server of its own.
 # --------------------------------------------------------------------------
@@ -1153,7 +1153,7 @@ def cfg_from_env():
         "debug_interval_default": env_int("AUTOTERM_DEBUG_INTERVAL_DEFAULT", 60),
         "capture_log_default": env_bool("AUTOTERM_CAPTURE_LOG_DEFAULT", False),
         "capture_log_max_mb": env_int("AUTOTERM_CAPTURE_LOG_MAX_MB", 20),
-        "capture_log_dir": os.environ.get("AUTOTERM_CAPTURE_LOG_DIR", "/share/autoterm_debug"),
+        "capture_log_dir": os.environ.get("AUTOTERM_CAPTURE_LOG_DIR", "/config/autoterm_debug"),
     }
 
 

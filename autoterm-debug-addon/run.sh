@@ -52,7 +52,7 @@ else
     MQTT_PASS=$(bashio::config 'mqtt_password')
 fi
 
-mkdir -p /share/autoterm_debug
+mkdir -p /config/autoterm_debug
 
 export AUTOTERM_PANEL_PORT="${PANEL_PORT}"
 export AUTOTERM_HEATER_PORT="${HEATER_PORT}"
@@ -67,7 +67,7 @@ export AUTOTERM_DEBUG_MODE_DEFAULT="${DEBUG_MODE_DEFAULT}"
 export AUTOTERM_DEBUG_INTERVAL_DEFAULT="${DEBUG_INTERVAL_DEFAULT}"
 export AUTOTERM_CAPTURE_LOG_DEFAULT="${CAPTURE_LOG_DEFAULT}"
 export AUTOTERM_CAPTURE_LOG_MAX_MB="${CAPTURE_LOG_MAX_MB}"
-export AUTOTERM_CAPTURE_LOG_DIR="/share/autoterm_debug"
+export AUTOTERM_CAPTURE_LOG_DIR="/config/autoterm_debug"
 
 bashio::log.info "Starting Autoterm 5D DEBUG bridge: panel=${PANEL_PORT} heater=${HEATER_PORT} mqtt=${MQTT_HOST}:${MQTT_PORT} debug_default=${DEBUG_MODE_DEFAULT} capture_default=${CAPTURE_LOG_DEFAULT}"
 

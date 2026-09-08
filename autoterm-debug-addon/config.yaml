@@ -1,5 +1,5 @@
 name: Autoterm 5D Debug
-version: "1.0.0"
+version: "1.0.1"
 slug: autoterm5d_debug
 description: >-
   Everything the Autoterm 5D add-on does, plus optional periodic extended
@@ -21,7 +21,7 @@ hassio_api: true
 services:
   - mqtt:want
 map:
-  - share:rw
+  - config:rw
 options:
   panel_port: /dev/ttyUSB1
   heater_port: /dev/ttyUSB3

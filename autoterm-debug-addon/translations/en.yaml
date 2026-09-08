@@ -54,4 +54,4 @@ configuration:
     description: Whether the raw traffic capture log starts on on startup.
   capture_log_max_mb:
     name: Capture log size cap (MB)
-    description: Per-file size cap for the raw traffic capture log under /share/autoterm_debug.
+    description: Per-file size cap for the raw traffic capture log under /config/autoterm_debug.

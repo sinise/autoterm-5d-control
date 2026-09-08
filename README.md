@@ -152,7 +152,7 @@ protocol reverse-engineering tools: an optional periodic probe that unlocks
 the vendor diagnostic tool's richer extended telemetry (fan speed, fuel
 pump frequency, temperatures, voltage, named operating mode -- see
 `docs/PROTOCOL.md`), sensors for all of it, and a toggleable raw traffic
-capture log saved under `/share` for further analysis. Install it instead
+capture log saved under `/config/autoterm_debug/` for further analysis. Install it instead
 of `autoterm-addon/`, not alongside it -- see its `DOCS.md` before enabling
 debug mode, it sends an unconfirmed-safe frame on the live bus.
 

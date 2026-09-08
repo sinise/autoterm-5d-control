@@ -81,15 +81,17 @@ Each line has a timestamp, the sender, CRC status, decoded `dev`/`type`/
 `autoterm_monitor.py` in the main repo uses, so it's directly comparable to
 other captures in this project.
 
-**Where the log goes:** `/share/autoterm_debug/capture_<timestamp>.log` --
-`/share` is a folder Home Assistant maps into every add-on that asks for
-it, and it's reachable from outside the add-on itself via:
+**Where the log goes:** `/config/autoterm_debug/capture_<timestamp>.log` --
+deliberately `/config`, not `/share`, so it shows up right where the
+**File editor** add-on (and most other file-browser add-ons) already opens
+by default, with no extra navigation or config changes needed. Reachable
+from outside the add-on itself via:
 
-- The **Samba share** add-on (if installed) -- browse to
-  `\\<home-assistant-ip>\share\autoterm_debug\` from your PC.
-- The **File editor** / **Studio Code Server** add-on (if installed) --
-  browse to `/share/autoterm_debug/` in its file tree and download from
-  there.
+- The **File editor** / **Studio Code Server** add-on -- it's right there
+  in the default file tree, under `autoterm_debug/`.
+- The **Samba share** add-on (if installed and configured to expose
+  `config`) -- browse to `\\<home-assistant-ip>\config\autoterm_debug\`
+  from your PC.
 - SSH into the Home Assistant host, if you have that set up.
 
 Toggling the switch off closes the current file cleanly (with an end
@@ -156,7 +158,8 @@ addition:
   handshake isn't getting a reply -- check the **Extended telemetry
   active** binary sensor and the add-on log for "DEBUG sent PUBR0
   handshake" lines.
-- **Capture log switch is on but no file appears in `/share`**: check the
-  add-on log for a "capture log started" line and the exact path logged --
-  and confirm you actually have a way to browse `/share` (Samba/File
-  editor add-on installed, or SSH).
+- **Capture log switch is on but no file appears**: check the add-on log
+  for a "capture log started" line and the exact path logged, and confirm
+  you actually have a way to browse `/config` (File editor/Studio Code
+  Server add-on installed, or SSH). It should appear as `autoterm_debug/`
+  right in the default file tree -- no extra navigation needed.

@@ -26,11 +26,21 @@ also available -- see [`autoterm-addon/`](autoterm-addon/).
 
 - Raspberry Pi (any model with enough USB ports / a multi-port USB-serial
   adapter)
-- A USB-to-UART adapter exposing (at least) two independent serial ports
+- A USB-to-UART adapter exposing (at least) two independent **5V TTL**
+  serial ports -- not RS-232, and not 3.3V-only unless it's confirmed
+  5V-tolerant on its inputs.
 - Two data wires spliced into the panel<->heater harness -- see the wiring
   note below -- plus a shared ground with the heater/panel circuit.
   **A missing ground produces pure garbage, not silence** -- check this
   first if a capture looks like noise.
+- On the reference harness, the two data wires are **yellow** (carries
+  data from the heater to the panel) and **white** (carries data from the
+  panel to the heater). There's also usually a **red +12V power** wire in
+  the same harness -- **leave it alone**. It's not a data signal; feeding
+  12V into a UART pin built for 3.3V/5V logic can permanently damage the
+  adapter (and possibly the Pi behind it) if that input isn't rated for
+  it. See [`autoterm-addon/DOCS.md`, "Wiring"](autoterm-addon/DOCS.md#wiring-connecting-the-pi-to-the-heater)
+  for the full step-by-step and a diagram.
 
 ### Passive tap vs. inline proxy
 

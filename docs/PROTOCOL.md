@@ -7,13 +7,18 @@ and other units/firmware revisions may differ.
 
 ## Physical layer
 
-- 2400 baud, 8N1
+- 2400 baud, 8N1, 5V TTL logic levels (not RS-232, not 3.3V)
 - Two independent full-duplex UART wires between panel and heater (not a
   shared bus): one carries panel-driven traffic, the other heater-driven
-  traffic. Confirmed content-wise, not assumed.
+  traffic. Confirmed content-wise, not assumed. On the reference harness
+  these are colored yellow (heater -> panel) and white (panel -> heater).
 - A solid shared ground between any tap/proxy point and the heater/panel
   circuit is required -- a missing ground produced pure garbage on this
   setup before it was fixed.
+- The harness also carries a red +12V power wire alongside the two data
+  wires -- not a signal, don't tap or cut it. See `autoterm-addon/DOCS.md`,
+  "Wiring", for the full physical hookup and why (12V into a UART input
+  built for 3.3V/5V logic can damage it).
 
 ## Frame format
 

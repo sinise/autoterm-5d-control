@@ -26,6 +26,10 @@ both left **off** (the default) -- in that mode it behaves exactly like the
 regular add-on. The extra risk described below only applies once you
 actually turn debug mode on.
 
+Physical wiring (which two wires to cut, the 12V red-wire warning, a
+diagram) is the same regardless of which add-on you install -- see the
+regular add-on's [DOCS.md, "Wiring"](../autoterm-addon/DOCS.md#wiring-connecting-the-pi-to-the-heater).
+
 ## Debug mode: extended telemetry probing
 
 **What it does:** periodically sends the vendor diagnostic tool's "PUBR0"

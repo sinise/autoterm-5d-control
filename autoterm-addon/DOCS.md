@@ -16,8 +16,8 @@ this to different hardware.
   (`sudo systemctl disable --now autoterm-web`).
 - This assumes you already have the Pi wired **inline** between the panel
   and heater (both legs of the original wire cut, Pi in between) -- not just
-  passively tapped. See the main repo's README for passive-tap-vs-inline
-  wiring details.
+  passively tapped. See "Wiring" below for exactly how, and the main repo's
+  README for passive-tap-vs-inline wiring details in general.
 - **Confirm your port assignment by content, not by devnode name.** USB
   serial adapters can re-enumerate after a replug, silently swapping which
   physical connector `/dev/ttyUSB1` vs `/dev/ttyUSB3` refers to -- this has
@@ -31,6 +31,73 @@ this to different hardware.
 - This controls a real combustion appliance. Watch the entities after your
   first Start/Stop before trusting it unattended, same as the standalone
   dashboard.
+
+## Wiring: connecting the Pi to the heater
+
+**Hardware needed:** a USB-to-serial adapter exposing **two independent
+5V TTL UART interfaces** (not RS-232, and not a 3.3V-only adapter unless
+it's confirmed 5V-tolerant on its inputs -- the panel/heater bus runs 5V
+TTL logic). A single 4-port adapter (e.g. an FTDI/CP2108-based quad
+adapter) works well since it gives you two spare ports beyond the two this
+add-on needs.
+
+**The panel-heater harness has (at least) four wires you care about:**
+
+| Wire | Carries |
+|---|---|
+| Yellow | The panel/display's **RX** -- i.e. this is the wire the **heater transmits on** |
+| White | The panel/display's **TX** -- i.e. this is the wire the **heater receives on** |
+| Red | **+12V power**, not a data signal |
+| Black (or similar) | Ground, common to the whole harness |
+
+**Cut both the yellow and the white wire** (only those two -- leave red and
+black intact) at a convenient point between the panel and the heater. Each
+cut leaves a "panel-side" stub and a "heater-side" stub. Wire each stub to
+the UART port on that same side -- one wire, one direction of travel, per
+diagram:
+
+```
+YELLOW wire -- carries data FROM the heater TO the panel:
+
+   HEATER >---[cut]---> HEATER_PORT's RX pin
+
+        (add-on relays it here, in software)
+
+   PANEL_PORT's TX pin >---[cut]---> PANEL / DISPLAY
+
+
+WHITE wire -- carries data FROM the panel TO the heater:
+
+   PANEL / DISPLAY >---[cut]---> PANEL_PORT's RX pin
+
+        (add-on relays it here, in software)
+
+   HEATER_PORT's TX pin >---[cut]---> HEATER
+```
+
+So: `heater_port` RX = yellow's heater-side stub, `heater_port` TX =
+white's heater-side stub; `panel_port` RX = white's panel-side stub,
+`panel_port` TX = yellow's panel-side stub. The add-on relays bytes
+between `panel_port` and `heater_port` in software (see
+`docs/PROTOCOL.md`), so the panel and heater talk exactly as before, just
+through the Pi in the middle.
+
+**Do not connect the red wire to anything on the Pi or the USB-serial
+adapter.** It's +12V, not a logic-level signal -- feeding 12V into a UART
+RX pin built for 3.3V/5V logic can permanently damage the adapter (and
+possibly the Pi's USB port behind it) if that input isn't rated for it.
+Leave it connected exactly as it already is between the panel and heater;
+this add-on has no reason to touch the power wire at all.
+
+**Ground is not optional.** Tie the Pi's GND (shared between both UART
+ports is fine) to the harness's black/ground wire. A missing shared ground
+produces pure garbage on the line, not silence -- if a capture looks like
+noise, check this first.
+
+Confirm which physical port ended up as `panel_port` vs `heater_port` by
+**content, not by assumption** -- USB-serial adapters can re-enumerate
+after a replug (see the port-autodiscovery section below and `CONTEXT.md`
+in the main repo for why this matters and how to check).
 
 ## Configuration
 

@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.6.0
+
+- Added a "Heater profile" config option: the extended-telemetry decoder
+  (byte offsets, state/mode names, fault names) is now selectable across
+  19 heater models, extracted from the vendor diagnostic tool's own
+  per-model Profiles/*.pfl + language.res data files (plaintext, not a
+  decompile) -- the same way `autoterm_flow_5`'s fields were originally
+  derived. **Only `autoterm_flow_5` is confirmed against real hardware --
+  every other profile is untested**: unverified byte offsets, and not
+  even confirmed the extended-telemetry mechanism (PUBR0 handshake,
+  dev02/type01 frame) works the same way on that model at all. A new
+  "Heater profile" sensor shows the active selection and flags
+  "(NOT TESTED)" for anything but Flow 5; the add-on log does the same at
+  startup. Selecting a different profile only changes which formulas
+  decode the extended frame -- it doesn't affect the base 18-byte
+  protocol, commands, or Prevent freezing, all of which stay as
+  originally confirmed regardless of this setting.
+
 ## 1.5.0
 
 - Confirmed on real hardware (reconstructing this add-on's own "Telemetry

@@ -1,5 +1,5 @@
 name: Autoterm 5D Debug
-version: "1.5.0"
+version: "1.6.0"
 slug: autoterm5d_debug
 description: >-
   Everything the Autoterm 5D add-on does, plus optional periodic extended
@@ -38,6 +38,7 @@ options:
   debug_interval_seconds_default: 60
   capture_log_default: false
   capture_log_max_mb: 20
+  heater_profile: autoterm_flow_5
 schema:
   panel_port: str
   heater_port: str
@@ -54,3 +55,4 @@ schema:
   debug_interval_seconds_default: int(5,3600)
   capture_log_default: bool
   capture_log_max_mb: int(1,500)
+  heater_profile: "list(14tc_10_molex|autoterm_air_2d|autoterm_air_4d|autoterm_air_8d|autoterm_air_9d|autoterm_flow_5|binar_5s_next|binar_5s|planar_2_with_flame_sensor|planar_2d|planar_2mk|planar_44d_s_p|planar_44mk|planar_4d_s_p|planar_4d|planar_8d_s_p|planar_9d|sputnik_2|sputnik_3)"

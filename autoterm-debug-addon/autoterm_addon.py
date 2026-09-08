@@ -81,88 +81,925 @@ DEVICE_INFO = {
 }
 
 # --------------------------------------------------------------------------
-# Extended telemetry (dev02, type01, 58-byte payload) -- vendor-defined
-# field formulas, read from Profiles/AUTOTERM FLOW 5.pfl in the vendor's
-# own diagnostic tool (plaintext file, not a decompile), cross-checked
-# against a real capture. See docs/PROTOCOL.md for the full derivation.
+# Extended telemetry (dev02, type01, N-byte payload) -- vendor-defined field
+# formulas, one set per heater model ("profile"), read from the vendor's
+# own Profiles/*.pfl files + language.res (plaintext data files, not a
+# decompile of the tool itself). Only "autoterm_flow_5" has been checked
+# against a real capture -- see docs/PROTOCOL.md, "Extended diagnostic-mode
+# telemetry". Every other profile here is taken straight from the vendor
+# tool's own data and has NEVER been validated against real hardware: byte
+# offsets, field names, and even whether the frame is the same size, the
+# PUBR0 handshake works the same way, or the extended mode exists at all
+# for that model are all unconfirmed. HEATER_PROFILES["<slug>"]["tested"]
+# reflects this -- check it (and log a warning) before trusting one.
 # --------------------------------------------------------------------------
 
-# index = state*10 + substate, 0-based into this table of 44 vendor strings
-# (state 0-4 x substate 0-9; unused combinations are "unknown").
-EXT_MODE_TABLE = [
-    "unknown", "waiting for a command", "cooling the flame sensor", "air blowing", "fuel pumping",
-    "unknown", "unknown", "unknown", "unknown", "unknown",
-    "waiting for temperature reduction", "locked", "unknown", "unknown", "unknown",
-    "unknown", "unknown", "unknown", "unknown", "unknown",
-    "cooling", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2",
-    "blowing", "combustion chamber heating", "blowing", "unknown", "unknown",
-    "low", "unknown", "High", "unknown", "blowing",
-    "waiting", "blowing", "pump only", "middle", "unknown",
-    "blowing", "blowing", "blowing", "shutting down",
-]
-# Same caveat as STATE_NAME_OPTIONS above: extended_mode_name() falls back
-# to a dynamic "unknown(S.SS)" string outside the table, which can't be
-# listed here -- that case shows as "unknown" in HA instead of a fixed name.
-EXT_MODE_NAME_OPTIONS = sorted(set(EXT_MODE_TABLE))
-
-# Partial, NOT independently cross-validated against a real fault -- read
-# from the vendor tool's own string table (language.res), matched to fault
-# codes via its .pfl entries. Only code 0 ("no fault") was actually
-# observed in the reference capture. Treat text as a strong hint, not gospel.
-EXT_FAULT_NAMES = {
-    0: "No faults", 1: "Overheat", 2: "Possible overheat", 3: "Overheat",
-    4: "Liquid temperature sensor", 5: "Flame temperature sensor",
-    6: "Board temperature sensor", 9: "Malfunction of a glow plug",
-    10: "Turnover mismatch", 12: "Increased supply voltage", 13: "No ignition",
-    14: "Faulty water pump", 15: "Low voltage", 16: "Blowing time exceeded",
-    17: "Faulty fuel pump", 20: "No connection", 22: "Faulty fuel pump",
-    24: "Temperature sensor off-scale", 25: "Temperature growing too fast",
-    26: "Fan overloaded", 27: "Fan. No rotation", 28: "Fan. Autorotation",
-    29: "Flame breaks too often", 30: "No connection", 37: "Overheat locking",
-    78: "Flame break during running",
+# Auto-generated from the vendor diagnostic tool's own Profiles/*.pfl files
+# (plaintext, not a decompile) + language.res, the same way AUTOTERM_FLOW_5's
+# fields were originally derived and cross-checked against a real capture.
+# ONLY 'autoterm_flow_5' has been checked against real hardware -- every other
+# entry is read straight from the vendor tool's own data and UNTESTED. See
+# docs/PROTOCOL.md and this add-on's DOCS.md before trusting one of these.
+HEATER_PROFILES = {
+    "14tc_10_molex": {
+        "label": "14TC-10 MOLEX",
+        "internal": "4TC-10 MOLEX",
+        "tested": False,
+        "state_mult": 10,
+        "state_names": ["unknown", "waiting for a command", "unknown", "cooling the flame sensor", "unknown", "shutting down", "unknown", "unknown", "unknown", "unknown", "preparation for ignition", "unknown", "waiting for temperature reduction", "cooling", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "glow plug warming up", "Ignition 1", "blowing", "Ignition 2", "combustion chamber heating", "blowing", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "blowing", "unknown", "blowing", "blowing", "shutting down", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "blowing", "unknown", "unknown", "low", "middle", "High", "blowing", "waiting", "pump only"],
+        "slots": {
+            "flame_temp": "a19*256+a20",
+            "liquid_temp": "a21",
+            "overheat_temp": "a22",
+            "board_temp": "a23",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a9",
+            "measured_rev": "a10",
+            "glow_plug": "a18",
+            "fuel_pump_hz": "a13*256+a14/100",
+            "voltage": "(a24*256+a25)/10",
+            "fault_code": "a44",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            3: "Overheat",
+            4: "Liquid temperature sensor",
+            5: "Flame temperature sensor",
+            6: "Board temperature sensor",
+            9: "Malfunction of a glow plug",
+            10: "Turnover mismatch",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            14: "Faulty water pump",
+            15: "Low voltage",
+            16: "Blowing time exceeded",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            22: "Faulty fuel pump",
+            24: "Temperature sensor off-scale",
+            25: "Temperature growing too fast",
+            26: "Fan overloaded",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+            29: "Flame breaks too often",
+            30: "No connection",
+            37: "Overheat locking",
+            78: "Flame break during running",
+        },
+    },
+    "autoterm_air_2d": {
+        "label": "AUTOTERM AIR 2D",
+        "internal": "PLANAR-2MK",
+        "tested": False,
+        "state_mult": 13,
+        "state_names": ["unknown", "waiting for a command", "air blowing", "cooling the flame sensor", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling the flame sensor", "ventilation", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "working", "unknown", "unknown", "unknown", "blowdown before ventilation mode", "ventilation", "cooling the flame sensor", "glow plug warming up", "glow plug warming up", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "shutting down", "blowing", "blowing", "blowing"],
+        "slots": {
+            "flame_temp": "(a19*256+a20)-273",
+            "liquid_temp": "a25",
+            "board_temp": "a26",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a12",
+            "measured_rev": "a13",
+            "glow_plug": "a22>0",
+            "fuel_pump_hz": "(a14*256+a15)/100",
+            "voltage": "(a27*256+a28)/10",
+            "fault_code": "a53",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            5: "Faulty temperature sensor",
+            6: "Board temperature sensor",
+            9: "Malfunction of a glow plug",
+            10: "Turnover mismatch",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            15: "Low voltage",
+            16: "Blowing time exceeded",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+            29: "Flame breaks too often",
+            30: "No connection",
+            78: "Flame break",
+        },
+    },
+    "autoterm_air_4d": {
+        "label": "AUTOTERM AIR 4D",
+        "internal": "PLANAR-44MK",
+        "tested": False,
+        "state_mult": 12,
+        "state_names": ["unknown", "waiting for a command", "air blowing", "cooling the flame sensor", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling the flame sensor", "ventilation", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "cooling the flame sensor", "unknown", "unknown", "unknown", "unknown", "unknown", "working", "blowdown before ventilation mode", "ventilation", "blowing", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "shutting down", "blowing", "blowing", "blowing"],
+        "slots": {
+            "flame_temp": "(a21*256+a22)-273",
+            "liquid_temp": "a25",
+            "board_temp": "a26",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a12",
+            "measured_rev": "a13",
+            "glow_plug": "a22>0",
+            "fuel_pump_hz": "(a14*256+a15)/100",
+            "voltage": "(a27*256+a28)/10",
+            "fault_code": "a53",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            5: "Faulty temperature sensor",
+            6: "Board temperature sensor",
+            9: "Malfunction of a glow plug",
+            10: "Turnover mismatch",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            15: "Low voltage",
+            16: "Blowing time exceeded",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+            29: "Flame breaks too often",
+            30: "No connection",
+            78: "Flame break",
+        },
+    },
+    "autoterm_air_8d": {
+        "label": "AUTOTERM AIR 8D",
+        "internal": "PLANAR-8D",
+        "tested": False,
+        "state_mult": 12,
+        "state_names": ["unknown", "waiting for a command", "air blowing", "cooling the flame sensor", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling the flame sensor", "ventilation", "unlocking;Ðóññêèé", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "cooling the flame sensor", "combustion chamber heating", "unknown", "unknown", "unknown", "unknown", "working", "blowdown before ventilation mode", "ventilation", "blowing", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "blowing", "shutting down", "blowing", "blowing"],
+        "slots": {
+            "flame_temp": "(a23*256+a24)-273",
+            "liquid_temp": "a29",
+            "overheat_temp": "(a31*256+a32)-273",
+            "board_temp": "a30",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a12",
+            "measured_rev": "a13",
+            "glow_plug": "a20>0",
+            "fuel_pump_hz": "(a14*256+a15)/100",
+            "voltage": "(a33*256+a34)/10",
+            "fault_code": "a64",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            4: "Board temperature sensor",
+            5: "Flame temperature sensor",
+            8: "Flame break during running",
+            9: "Malfunction of a glow plug",
+            10: "Faulty fan",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            15: "Low voltage",
+            16: "Blowing time exceeded",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+            30: "Flame break during running",
+            31: "Overheat",
+            32: "Faulty temperature sensor",
+            33: "Overheat locking",
+        },
+    },
+    "autoterm_air_9d": {
+        "label": "AUTOTERM AIR 9D",
+        "internal": "PLANAR-9D",
+        "tested": False,
+        "state_mult": 12,
+        "state_names": ["unknown", "waiting for a command", "air blowing", "cooling the flame sensor", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling the flame sensor", "ventilation", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "cooling the flame sensor", "unknown", "unknown", "unknown", "unknown", "unknown", "working", "blowdown before ventilation mode", "ventilation", "blowing", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "shutting down", "blowing", "blowing", "blowing"],
+        "slots": {
+            "flame_temp": "(a21*256+a22)-273",
+            "liquid_temp": "a23",
+            "overheat_temp": "(a26*256+a27)-273",
+            "board_temp": "a24",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a12",
+            "measured_rev": "a13",
+            "glow_plug": "a18>0",
+            "fuel_pump_hz": "(a14*256+a15)/100",
+            "voltage": "(a28*256+a29)/10",
+            "fault_code": "a58",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            4: "Board temperature sensor",
+            5: "Flame temperature sensor",
+            6: "Board temperature sensor",
+            9: "Malfunction of a glow plug",
+            10: "Turnover mismatch",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            15: "Low voltage",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+            29: "Flame break",
+            30: "No connection",
+            37: "Overheat locking",
+            78: "Flame break",
+        },
+    },
+    "autoterm_flow_5": {
+        "label": "AUTOTERM FLOW 5",
+        "internal": "BINAR-5S",
+        "tested": True,
+        "state_mult": 10,
+        "state_names": ["unknown", "waiting for a command", "cooling the flame sensor", "air blowing", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "waiting for temperature reduction", "locked", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "blowing", "combustion chamber heating", "blowing", "unknown", "unknown", "low", "unknown", "High", "unknown", "blowing", "waiting", "blowing", "pump only", "middle", "unknown", "blowing", "blowing", "blowing", "shutting down"],
+        "slots": {
+            "flame_temp": "a18*256+a19-273",
+            "liquid_temp": "a20",
+            "overheat_temp": "a21",
+            "board_temp": "a22",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a12",
+            "measured_rev": "a13",
+            "glow_plug": "a14>0",
+            "fuel_pump_hz": "a16/10",
+            "voltage": "(a23*256+a24)/10",
+            "fault_code": "a37",
+            "engine_state": "a52",
+            "relay_state": "a53",
+            "fan_current": "a55*256+a56",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            3: "Overheat",
+            4: "Liquid temperature sensor",
+            5: "Flame temperature sensor",
+            6: "Board temperature sensor",
+            9: "Malfunction of a glow plug",
+            10: "Turnover mismatch",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            14: "Faulty water pump",
+            15: "Low voltage",
+            16: "Blowing time exceeded",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            22: "Faulty fuel pump",
+            24: "Temperature sensor off-scale",
+            25: "Temperature growing too fast",
+            26: "Fan overloaded",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+            29: "Flame breaks too often",
+            30: "No connection",
+            37: "Overheat locking",
+            78: "Flame break during running",
+        },
+    },
+    "binar_5s_next": {
+        "label": "BINAR-5S-NEXT",
+        "internal": "BINAR-5S",
+        "tested": False,
+        "state_mult": 10,
+        "state_names": ["unknown", "waiting for a command", "cooling the flame sensor", "air blowing", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "waiting for temperature reduction", "locked", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "blowing", "combustion chamber heating", "blowing", "unknown", "unknown", "low", "unknown", "High", "unknown", "blowing", "waiting", "blowing", "pump only", "middle", "unknown", "blowing", "blowing", "blowing", "shutting down"],
+        "slots": {
+            "flame_temp": "a18*256+a19-273",
+            "liquid_temp": "a20",
+            "overheat_temp": "a21",
+            "board_temp": "a22",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a12",
+            "measured_rev": "a13",
+            "glow_plug": "a14>0",
+            "fuel_pump_hz": "a16/10",
+            "voltage": "(a23*256+a24)/10",
+            "fault_code": "a37",
+            "engine_state": "a52",
+            "relay_state": "a53",
+            "fan_current": "a55*256+a56",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            3: "Overheat",
+            4: "Liquid temperature sensor",
+            5: "Flame temperature sensor",
+            6: "Board temperature sensor",
+            9: "Malfunction of a glow plug",
+            10: "Turnover mismatch",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            14: "Faulty water pump",
+            15: "Low voltage",
+            16: "Blowing time exceeded",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            22: "Faulty fuel pump",
+            24: "Temperature sensor off-scale",
+            25: "Temperature growing too fast",
+            26: "Fan overloaded",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+            29: "Flame breaks too often",
+            30: "No connection",
+            37: "Overheat locking",
+            78: "Flame break during running",
+        },
+    },
+    "binar_5s": {
+        "label": "BINAR-5S",
+        "internal": "BINAR-5S",
+        "tested": False,
+        "state_mult": 10,
+        "state_names": ["unknown", "waiting for a command", "cooling the flame sensor", "air blowing", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "waiting for temperature reduction", "locked", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "blowing", "combustion chamber heating", "blowing", "unknown", "unknown", "low", "unknown", "High", "unknown", "blowing", "waiting", "blowing", "pump only", "middle", "unknown", "blowing", "blowing", "blowing", "shutting down"],
+        "slots": {
+            "flame_temp": "a18*256+a19-273",
+            "liquid_temp": "a20",
+            "overheat_temp": "a21",
+            "board_temp": "a22",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a12",
+            "measured_rev": "a13",
+            "glow_plug": "a14>0",
+            "fuel_pump_hz": "a16/10",
+            "voltage": "(a23*256+a24)/10",
+            "fault_code": "a37",
+            "engine_state": "a52",
+            "relay_state": "a53",
+            "fan_current": "a55*256+a56",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            3: "Overheat",
+            4: "Liquid temperature sensor",
+            5: "Flame temperature sensor",
+            6: "Board temperature sensor",
+            9: "Malfunction of a glow plug",
+            10: "Turnover mismatch",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            14: "Faulty water pump",
+            15: "Low voltage",
+            16: "Blowing time exceeded",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            22: "Faulty fuel pump",
+            24: "Temperature sensor off-scale",
+            25: "Temperature growing too fast",
+            26: "Fan overloaded",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+            29: "Flame breaks too often",
+            30: "No connection",
+            37: "Overheat locking",
+            78: "Flame break during running",
+        },
+    },
+    "planar_2_with_flame_sensor": {
+        "label": "PLANAR-2 with flame sensor",
+        "internal": "PLANAR-2 with flame sensor",
+        "tested": False,
+        "state_mult": 12,
+        "state_names": ["unknown", "waiting for a command", "air blowing", "cooling the flame sensor", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling the flame sensor", "ventilation", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "cooling the flame sensor", "unknown", "unknown", "unknown", "unknown", "unknown", "working", "blowdown before ventilation mode", "ventilation", "blowing", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "shutting down", "blowing", "blowing", "blowing"],
+        "slots": {
+            "flame_temp": "a23*256+a24",
+            "liquid_temp": "a26",
+            "board_temp": "a27",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a12",
+            "measured_rev": "a13",
+            "glow_plug": "a20>0",
+            "fuel_pump_hz": "(a14*256+a15)/100",
+            "voltage": "(a28*256+a29)/10",
+            "fault_code": "a52",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            4: "Board temperature sensor",
+            5: "Flame temperature sensor",
+            6: "Board temperature sensor",
+            9: "Malfunction of a glow plug",
+            10: "Turnover mismatch",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            15: "Low voltage",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+            29: "Flame break",
+            30: "No connection",
+            37: "Overheat locking",
+            78: "Flame break",
+        },
+    },
+    "planar_2d": {
+        "label": "PLANAR-2D",
+        "internal": "PLANAR-2D",
+        "tested": False,
+        "state_mult": 13,
+        "state_names": ["unknown", "waiting for a command", "air blowing", "cooling the flame sensor", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling the flame sensor", "ventilation", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "working", "unknown", "unknown", "unknown", "blowdown before ventilation mode", "ventilation", "cooling the flame sensor", "glow plug warming up", "glow plug warming up", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "shutting down", "blowing", "blowing", "blowing"],
+        "slots": {
+            "flame_temp": "(a23*256+a24)-273",
+            "liquid_temp": "a26",
+            "board_temp": "a27",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a12",
+            "measured_rev": "a13",
+            "glow_plug": "a20>0",
+            "fuel_pump_hz": "15625/(65536-(a14*256+a15))",
+            "voltage": "(a28*256+a29)/10",
+            "fault_code": "a50",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            5: "Faulty temperature sensor",
+            6: "Board temperature sensor",
+            9: "Malfunction of a glow plug",
+            10: "Turnover mismatch",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            15: "Low voltage",
+            16: "Blowing time exceeded",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+            29: "Flame breaks too often",
+            30: "No connection",
+            78: "Flame break",
+        },
+    },
+    "planar_2mk": {
+        "label": "PLANAR-2MK",
+        "internal": "PLANAR-2MK",
+        "tested": False,
+        "state_mult": 13,
+        "state_names": ["unknown", "waiting for a command", "air blowing", "cooling the flame sensor", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling the flame sensor", "ventilation", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "working", "unknown", "unknown", "unknown", "blowdown before ventilation mode", "ventilation", "cooling the flame sensor", "glow plug warming up", "glow plug warming up", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "shutting down", "blowing", "blowing", "blowing"],
+        "slots": {
+            "flame_temp": "(a19*256+a20)-273",
+            "liquid_temp": "a25",
+            "board_temp": "a26",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a12",
+            "measured_rev": "a13",
+            "glow_plug": "a22>0",
+            "fuel_pump_hz": "(a14*256+a15)/100",
+            "voltage": "(a27*256+a28)/10",
+            "fault_code": "a53",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            5: "Faulty temperature sensor",
+            6: "Board temperature sensor",
+            9: "Malfunction of a glow plug",
+            10: "Turnover mismatch",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            15: "Low voltage",
+            16: "Blowing time exceeded",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+            29: "Flame breaks too often",
+            30: "No connection",
+            78: "Flame break",
+        },
+    },
+    "planar_44d_s_p": {
+        "label": "PLANAR-44D-S-P",
+        "internal": "PLANAR-44D-SP",
+        "tested": False,
+        "state_mult": 12,
+        "state_names": ["unknown", "waiting for a command", "air blowing", "cooling the flame sensor", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling the flame sensor", "ventilation", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "cooling the flame sensor", "unknown", "unknown", "unknown", "unknown", "unknown", "working", "blowdown before ventilation mode", "ventilation", "blowing", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "shutting down", "blowing", "blowing", "blowing"],
+        "slots": {
+            "flame_temp": "(a23*256+a24)-273",
+            "liquid_temp": "a26",
+            "board_temp": "a27",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a12",
+            "measured_rev": "a13",
+            "glow_plug": "a20>0",
+            "fuel_pump_hz": "(a14*256+a15)/100",
+            "voltage": "(a28*256+a29)/10",
+            "fault_code": "a52",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            4: "Board temperature sensor",
+            5: "Flame temperature sensor",
+            6: "Board temperature sensor",
+            9: "Malfunction of a glow plug",
+            10: "Turnover mismatch",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            15: "Low voltage",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+            29: "Flame break",
+            30: "No connection",
+            37: "Overheat locking",
+            78: "Flame break",
+        },
+    },
+    "planar_44mk": {
+        "label": "PLANAR-44MK",
+        "internal": "PLANAR-44MK",
+        "tested": False,
+        "state_mult": 12,
+        "state_names": ["unknown", "waiting for a command", "air blowing", "cooling the flame sensor", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling the flame sensor", "ventilation", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "cooling the flame sensor", "unknown", "unknown", "unknown", "unknown", "unknown", "working", "blowdown before ventilation mode", "ventilation", "blowing", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "shutting down", "blowing", "blowing", "blowing"],
+        "slots": {
+            "flame_temp": "(a21*256+a22)-273",
+            "liquid_temp": "a25",
+            "board_temp": "a26",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a12",
+            "measured_rev": "a13",
+            "glow_plug": "a22>0",
+            "fuel_pump_hz": "(a14*256+a15)/100",
+            "voltage": "(a27*256+a28)/10",
+            "fault_code": "a53",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            5: "Faulty temperature sensor",
+            6: "Board temperature sensor",
+            9: "Malfunction of a glow plug",
+            10: "Turnover mismatch",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            15: "Low voltage",
+            16: "Blowing time exceeded",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+            29: "Flame breaks too often",
+            30: "No connection",
+            78: "Flame break",
+        },
+    },
+    "planar_4d_s_p": {
+        "label": "PLANAR-4D-S-P",
+        "internal": "PLANAR-4D",
+        "tested": False,
+        "state_mult": 10,
+        "state_names": ["unknown", "waiting for a command", "air blowing", "cooling the flame sensor", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling the flame sensor", "ventilation", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "cooling the flame sensor", "blowing", "unknown", "unknown", "working", "blowdown before ventilation mode", "ventilation", "blowing", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "shutting down", "blowing", "blowing", "blowing"],
+        "slots": {
+            "flame_temp": "(a23*256+a24)-273",
+            "liquid_temp": "a26",
+            "board_temp": "a27",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a12",
+            "measured_rev": "a13",
+            "glow_plug": "a20>0",
+            "fuel_pump_hz": "(a14*256+a15)/100",
+            "voltage": "(a28*256+a29)/10",
+            "fault_code": "a52",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            4: "Overheat",
+            5: "Flame temperature sensor",
+            8: "Flame break during running",
+            9: "Malfunction of a glow plug",
+            10: "Faulty fan",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            15: "Low voltage",
+            16: "Blowing time exceeded",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+        },
+    },
+    "planar_4d": {
+        "label": "PLANAR-4D",
+        "internal": "PLANAR-4D",
+        "tested": False,
+        "state_mult": 10,
+        "state_names": ["unknown", "waiting for a command", "air blowing", "cooling the flame sensor", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling the flame sensor", "ventilation", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "cooling the flame sensor", "blowing", "unknown", "unknown", "working", "blowdown before ventilation mode", "ventilation", "blowing", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "shutting down", "blowing", "blowing", "blowing"],
+        "slots": {
+            "flame_temp": "(a23*256+a24)-273",
+            "liquid_temp": "a26",
+            "board_temp": "a27",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a12",
+            "measured_rev": "a13",
+            "glow_plug": "a20>0",
+            "fuel_pump_hz": "(a14*256+a15)/100",
+            "voltage": "(a28*256+a29)/10",
+            "fault_code": "a52",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            4: "Overheat",
+            5: "Flame temperature sensor",
+            8: "Flame break during running",
+            9: "Malfunction of a glow plug",
+            10: "Faulty fan",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            15: "Low voltage",
+            16: "Blowing time exceeded",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+        },
+    },
+    "planar_8d_s_p": {
+        "label": "PLANAR-8D-S-P",
+        "internal": "PLANAR-8D",
+        "tested": False,
+        "state_mult": 12,
+        "state_names": ["unknown", "waiting for a command", "air blowing", "cooling the flame sensor", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling the flame sensor", "ventilation", "unlocking;Ðóññêèé", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "cooling the flame sensor", "combustion chamber heating", "unknown", "unknown", "unknown", "unknown", "working", "blowdown before ventilation mode", "ventilation", "blowing", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "blowing", "shutting down", "blowing", "blowing"],
+        "slots": {
+            "flame_temp": "(a23*256+a24)-273",
+            "liquid_temp": "a29",
+            "overheat_temp": "(a31*256+a32)-273",
+            "board_temp": "a30",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a12",
+            "measured_rev": "a13",
+            "glow_plug": "a20>0",
+            "fuel_pump_hz": "(a14*256+a15)/100",
+            "voltage": "(a33*256+a34)/10",
+            "fault_code": "a64",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            4: "Board temperature sensor",
+            5: "Flame temperature sensor",
+            8: "Flame break during running",
+            9: "Malfunction of a glow plug",
+            10: "Faulty fan",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            15: "Low voltage",
+            16: "Blowing time exceeded",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+            30: "Flame break during running",
+            31: "Overheat",
+            32: "Faulty temperature sensor",
+            33: "Overheat locking",
+        },
+    },
+    "planar_9d": {
+        "label": "PLANAR-9D",
+        "internal": "PLANAR-9D",
+        "tested": False,
+        "state_mult": 12,
+        "state_names": ["unknown", "waiting for a command", "air blowing", "cooling the flame sensor", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling the flame sensor", "ventilation", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "cooling the flame sensor", "unknown", "unknown", "unknown", "unknown", "unknown", "working", "blowdown before ventilation mode", "ventilation", "blowing", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "shutting down", "blowing", "blowing", "blowing"],
+        "slots": {
+            "flame_temp": "(a21*256+a22)-273",
+            "liquid_temp": "a23",
+            "overheat_temp": "(a26*256+a27)-273",
+            "board_temp": "a24",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a12",
+            "measured_rev": "a13",
+            "glow_plug": "a18>0",
+            "fuel_pump_hz": "(a14*256+a15)/100",
+            "voltage": "(a28*256+a29)/10",
+            "fault_code": "a58",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            4: "Board temperature sensor",
+            5: "Flame temperature sensor",
+            6: "Board temperature sensor",
+            9: "Malfunction of a glow plug",
+            10: "Turnover mismatch",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            15: "Low voltage",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+            29: "Flame break",
+            30: "No connection",
+            37: "Overheat locking",
+            78: "Flame break",
+        },
+    },
+    "sputnik_2": {
+        "label": "SPUTNIK-2",
+        "internal": "SPUTNIK-2",
+        "tested": False,
+        "state_mult": 13,
+        "state_names": ["unknown", "waiting for a command", "air blowing", "cooling the flame sensor", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling the flame sensor", "ventilation", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "working", "unknown", "unknown", "unknown", "blowdown before ventilation mode", "ventilation", "cooling the flame sensor", "glow plug warming up", "glow plug warming up", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "shutting down", "blowing", "blowing", "blowing"],
+        "slots": {
+            "flame_temp": "(a19*256+a20)-273",
+            "liquid_temp": "a25",
+            "board_temp": "a26",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a12",
+            "measured_rev": "a13",
+            "glow_plug": "a22>0",
+            "fuel_pump_hz": "(a14*256+a15)/100",
+            "voltage": "(a27*256+a28)/10",
+            "fault_code": "a53",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            5: "Faulty temperature sensor",
+            6: "Board temperature sensor",
+            9: "Malfunction of a glow plug",
+            10: "Turnover mismatch",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            15: "Low voltage",
+            16: "Blowing time exceeded",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+            29: "Flame breaks too often",
+            30: "No connection",
+            78: "Flame break",
+        },
+    },
+    "sputnik_3": {
+        "label": "SPUTNIK-3",
+        "internal": "Sputnik-3",
+        "tested": False,
+        "state_mult": 10,
+        "state_names": ["unknown", "waiting for a command", "air blowing", "cooling the flame sensor", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling the flame sensor", "ventilation", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "combustion chamber heating", "blowing", "cooling the flame sensor", "blowing", "unknown", "unknown", "working", "blowdown before ventilation mode", "ventilation", "blowing", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "shutting down", "blowing", "blowing", "blowing"],
+        "slots": {
+            "flame_temp": "a23*256+a24",
+            "liquid_temp": "a26",
+            "board_temp": "a27",
+            "running_time_s": "a3*65536+a4*256+a5",
+            "defined_rev": "a12",
+            "measured_rev": "a13",
+            "glow_plug": "a20>0",
+            "fuel_pump_hz": "(a14*256+a15)/100",
+            "voltage": "(a28*256+a29)/10",
+            "fault_code": "a52",
+        },
+        "faults": {
+            0: "No faults",
+            1: "Overheat",
+            2: "Possible overheat",
+            4: "Overheat",
+            5: "Flame temperature sensor",
+            8: "Flame break during running",
+            9: "Malfunction of a glow plug",
+            10: "Faulty fan",
+            12: "Increased supply voltage",
+            13: "No ignition",
+            15: "Low voltage",
+            16: "Blowing time exceeded",
+            17: "Faulty fuel pump",
+            20: "No connection",
+            27: "Fan. No rotation",
+            28: "Fan. Autorotation",
+        },
+    },
 }
-# Same caveat again: a fault code not in the table above falls back to a
-# dynamic "unknown(N)" string, which shows as "unknown" in HA/Prometheus
-# for this named sensor -- the numeric "Fault code" sensor still captures
-# the raw code in that case, nothing is lost, just not named.
-EXT_FAULT_NAME_OPTIONS = sorted(set(EXT_FAULT_NAMES.values()))
 
 
-def extended_mode_name(state, substate):
-    idx = state * 10 + substate
-    if 0 <= idx < len(EXT_MODE_TABLE):
-        return EXT_MODE_TABLE[idx]
+import re as _re
+
+_A_REF = _re.compile(r"a(\d+)")
+
+
+def _compile_formula(formula):
+    """Vendor formula string (e.g. "a18*256+a19-273") -> compiled Python
+    expression indexing a 0-based payload list (aN -> p[N-1]). Formulas
+    come only from HEATER_PROFILES above (our own extraction), never from
+    live/network input, so compiling and eval()'ing them is safe -- this
+    isn't arbitrary user input."""
+    py_expr = _A_REF.sub(lambda m: f"p[{int(m.group(1)) - 1}]", formula)
+    return compile(py_expr, "<heater-profile-formula>", "eval")
+
+
+# slot key (as extracted/mapped) -> the stable JSON/entity field name this
+# add-on has always used for that concept (kept fixed across all profiles
+# so existing entities/dashboards don't change when switching profiles --
+# a profile that lacks a given slot just leaves that key absent).
+SLOT_TO_KEY = {
+    "flame_temp": "ext_flame_temp_c",
+    "liquid_temp": "ext_liquid_temp_c",
+    "overheat_temp": "ext_overheat_temp_c",
+    "board_temp": "ext_board_temp_c",
+    "running_time_s": "ext_running_time_s",
+    "defined_rev": "ext_defined_rev",
+    "measured_rev": "ext_measured_rev",
+    "glow_plug": "ext_glow_plug",
+    "fuel_pump_hz": "ext_fuel_pump_hz",
+    "voltage": "ext_voltage",
+    "fault_code": "ext_fault_code",
+    "engine_state": "ext_engine_state",
+    "relay_state": "ext_relay_state",
+    "fan_current": "ext_fan_current_ma",
+}
+
+DEFAULT_HEATER_PROFILE = "autoterm_flow_5"
+
+
+def prepare_profile(slug):
+    """Look up a profile by slug and precompile its formulas once, so
+    decode_extended_payload() doesn't re-parse formula strings per frame."""
+    profile = dict(HEATER_PROFILES[slug])
+    profile["slug"] = slug
+    profile["_compiled_slots"] = {k: _compile_formula(v) for k, v in profile["slots"].items()}
+    return profile
+
+
+def profile_mode_name(profile, state, substate):
+    mult = profile["state_mult"]
+    names = profile["state_names"]
+    if mult is None:
+        return f"unknown({state}.{substate})"
+    idx = state * mult + substate
+    if 0 <= idx < len(names):
+        return names[idx]
     return f"unknown({state}.{substate})"
 
 
-def decode_extended_payload(payload):
-    """dev02, type01, 58-byte payload -> named fields. See module docstring."""
-    if len(payload) < 56:
+def profile_mode_name_options(profile):
+    if not profile["state_names"]:
+        return ["unknown"]
+    return sorted(set(profile["state_names"]))
+
+
+def profile_fault_name_options(profile):
+    if not profile["faults"]:
+        return ["unknown"]
+    return sorted(set(profile["faults"].values()))
+
+
+def decode_extended_payload(payload, profile):
+    """dev02, type01 payload -> named fields, using the given (precompiled,
+    see prepare_profile()) heater profile's field formulas. A profile that
+    doesn't define a given slot, or whose formula indexes past the end of
+    this particular payload, just omits that key rather than failing the
+    whole decode -- untested profiles may have a different real frame
+    length than what their formulas assume."""
+    if len(payload) < 2:
         return {}
     p = payload
     state, substate = p[0], p[1]
-    fault = p[36]
-    return {
+    result = {
         "ext_state_raw": state,
         "ext_substate_raw": substate,
-        "ext_mode_code": state * 10 + substate,
-        "ext_mode_name": extended_mode_name(state, substate),
-        "ext_running_time_s": p[2] * 65536 + p[3] * 256 + p[4],
-        "ext_defined_rev": p[11],
-        "ext_measured_rev": p[12],
-        "ext_glow_plug": p[13] > 0,
-        "ext_fuel_pump_hz": round(p[15] / 10, 1),
-        "ext_flame_temp_c": (p[17] * 256 + p[18]) - 273,
-        "ext_liquid_temp_c": p[19],
-        "ext_overheat_temp_c": p[20],
-        "ext_board_temp_c": p[21],
-        "ext_voltage": round((p[22] * 256 + p[23]) / 10, 1),
-        "ext_fault_code": fault,
-        "ext_fault_name": EXT_FAULT_NAMES.get(fault, f"unknown({fault})"),
-        "ext_engine_state": p[51],
-        "ext_relay_state": p[52],
-        "ext_fan_current_ma": p[54] * 256 + p[55],
+        "ext_mode_code": (state * profile["state_mult"] + substate) if profile["state_mult"] else None,
+        "ext_mode_name": profile_mode_name(profile, state, substate),
     }
+    for slotkey, code in profile["_compiled_slots"].items():
+        key = SLOT_TO_KEY[slotkey]
+        try:
+            result[key] = eval(code, {"__builtins__": {}}, {"p": p})
+        except Exception:
+            continue
+    if "ext_glow_plug" in result:
+        result["ext_glow_plug"] = bool(result["ext_glow_plug"])
+    for key in ("ext_fuel_pump_hz", "ext_voltage"):
+        if key in result:
+            result[key] = round(result[key], 1)
+    if "ext_fault_code" in result:
+        fault = int(result["ext_fault_code"])
+        result["ext_fault_code"] = fault
+        result["ext_fault_name"] = profile["faults"].get(fault, f"unknown({fault})")
+    return result
 
 
 def build_frame(dev, type_, payload=b""):
@@ -442,8 +1279,9 @@ class CaptureLogHandler(logging.Handler):
 
 
 class StatusModel:
-    def __init__(self, preheat_minutes_default, debug_mode_default, debug_interval_default, capture_log_default):
+    def __init__(self, preheat_minutes_default, debug_mode_default, debug_interval_default, capture_log_default, profile):
         self.lock = threading.Lock()
+        self.profile = profile
         self.status = {}
         self.status_ts = None
         self.extended = {}
@@ -470,8 +1308,12 @@ class StatusModel:
             elif dev == 0x03 and type_ == 0x11 and len(payload) == 1:
                 self.cabin_temp = payload[0]
                 self.cabin_temp_ts = ts
-            elif dev == 0x02 and type_ == 0x01 and len(payload) == 58:
-                self.extended = decode_extended_payload(payload)
+            elif dev == 0x02 and type_ == 0x01 and len(payload) >= 2:
+                # Not gated on ==58: that's autoterm_flow_5's confirmed
+                # length, but an untested profile's real frame length is
+                # unknown -- decode_extended_payload() itself skips any
+                # field whose formula indexes past the end of payload.
+                self.extended = decode_extended_payload(payload, self.profile)
                 self.extended_ts = ts
         devname = KNOWN_DEV.get(dev, f"0x{dev:02x}")
         log.debug("%s dev=%s type=%s %s", direction, devname, type_, payload.hex(" "))
@@ -549,6 +1391,10 @@ class StatusModel:
                 "debug_interval": self.debug_interval,
                 "extended_active": ext_age is not None and ext_age <= EXT_STALE_AFTER,
                 "extended_age": ext_age,
+                "heater_profile": (
+                    self.profile["label"] if self.profile["tested"]
+                    else f"{self.profile['label']} (NOT TESTED)"
+                ),
             }
             snap.update(self.status)
             snap.update(self.extended)
@@ -941,7 +1787,7 @@ class PreventFreezing(threading.Thread):
                 log.error("PREVENT-FREEZING action failed: %r", e)
 
 
-def discovery_configs():
+def discovery_configs(profile):
     """(topic, payload) pairs for every entity, published retained on connect."""
     base = {"availability_topic": AVAILABILITY_TOPIC, "device": DEVICE_INFO}
 
@@ -1111,10 +1957,16 @@ def discovery_configs():
     #    and the heater is actually replying -- see "Extended telemetry
     #    active" above) --------------------------------------------------
 
+    entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/heater_profile/config", {
+        **base, "name": "Heater profile", "unique_id": f"{NODE_ID}_heater_profile",
+        "state_topic": STATE_TOPIC, "value_template": blank_to_none("heater_profile"),
+        "icon": "mdi:file-cog-outline", "entity_category": "diagnostic",
+    }))
+
     entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/ext_mode_name/config", {
         **base, "name": "Mode of operation", "unique_id": f"{NODE_ID}_ext_mode_name",
         "state_topic": STATE_TOPIC, "value_template": blank_to_none("ext_mode_name"),
-        "device_class": "enum", "options": EXT_MODE_NAME_OPTIONS,
+        "device_class": "enum", "options": profile_mode_name_options(profile),
         "icon": "mdi:state-machine",
     }))
     entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/ext_mode_code/config", {
@@ -1179,7 +2031,7 @@ def discovery_configs():
     entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/ext_fault_name/config", {
         **base, "name": "Fault (extended, named)", "unique_id": f"{NODE_ID}_ext_fault_name",
         "state_topic": STATE_TOPIC, "value_template": blank_to_none("ext_fault_name"),
-        "device_class": "enum", "options": EXT_FAULT_NAME_OPTIONS,
+        "device_class": "enum", "options": profile_fault_name_options(profile),
         "icon": "mdi:alert-circle-outline", "entity_category": "diagnostic",
     }))
     entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/ext_fault_code/config", {
@@ -1217,9 +2069,26 @@ class Bridge:
         self._shutdown_done = False
         self.heater_lock = threading.Lock()
         self.panel_lock = threading.Lock()
+
+        profile_slug = cfg["heater_profile"] if cfg["heater_profile"] in HEATER_PROFILES else DEFAULT_HEATER_PROFILE
+        if profile_slug != cfg["heater_profile"]:
+            log.error("Unknown heater_profile %r, falling back to %r", cfg["heater_profile"], DEFAULT_HEATER_PROFILE)
+        self.profile = prepare_profile(profile_slug)
+        if self.profile["tested"]:
+            log.info("Heater profile: %s (confirmed against real hardware)", self.profile["label"])
+        else:
+            log.warning(
+                "Heater profile: %s -- NOT TESTED against real hardware. Byte offsets, field "
+                "names, state/fault tables (and whether the extended-telemetry mechanism even "
+                "applies to this model at all) are read straight from the vendor tool's own "
+                "data, unverified. See docs/PROTOCOL.md and this add-on's DOCS.md.",
+                self.profile["label"],
+            )
+
         self.model = StatusModel(
             cfg["preheat_default"], cfg["debug_mode_default"],
             cfg["debug_interval_default"], cfg["capture_log_default"],
+            self.profile,
         )
         self.cmd_queue = queue.Queue()
 
@@ -1260,7 +2129,7 @@ class Bridge:
             log.error("MQTT connect failed, rc=%s", rc)
             return
         log.info("MQTT connected")
-        for topic, payload in discovery_configs():
+        for topic, payload in discovery_configs(self.profile):
             client.publish(topic, json.dumps(payload), retain=True)
         client.publish(AVAILABILITY_TOPIC, "online", retain=True)
         for suffix in (
@@ -1434,6 +2303,7 @@ def cfg_from_env():
         "capture_log_default": env_bool("AUTOTERM_CAPTURE_LOG_DEFAULT", False),
         "capture_log_max_mb": env_int("AUTOTERM_CAPTURE_LOG_MAX_MB", 20),
         "capture_log_dir": os.environ.get("AUTOTERM_CAPTURE_LOG_DIR", "/config/autoterm_debug"),
+        "heater_profile": os.environ.get("AUTOTERM_HEATER_PROFILE") or DEFAULT_HEATER_PROFILE,
     }
 
 

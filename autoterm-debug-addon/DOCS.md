@@ -72,6 +72,70 @@ heater is actually replying with the richer frame (turns on once a valid
 mode is on but this stays off, the handshake isn't getting a reply, which
 is itself useful information.
 
+## Heater profile: other models
+
+The extended telemetry frame's field formulas (byte offsets, state/mode
+names, fault names) are model-specific. The **Heater profile** option
+selects which model's formulas decode the frame -- 19 choices, extracted
+from the vendor diagnostic tool's own per-model `Profiles/*.pfl` files
+plus its `language.res` string table (plaintext data files read directly,
+not a decompile of the tool itself), the same way `autoterm_flow_5`'s
+fields were originally derived and cross-checked against a real capture.
+
+**Only `autoterm_flow_5` is confirmed against real hardware.** Every other
+option below is read straight from the vendor tool's own data and has
+**never been validated**: the byte offsets could be wrong, the field set
+could be incomplete (some models expose 5-6 temperature-ish registers;
+only 4 slots are wired up here -- see "Known limitation" below), and it
+isn't even confirmed that the extended-telemetry mechanism itself (the
+`PUBR0` handshake, the `dev02`/`type01` frame) works the same way on that
+model, or applies at all. The add-on logs a warning at startup, and a
+**Heater profile** sensor shows the active selection with a `(NOT TESTED)`
+suffix, for anything but Flow 5.
+
+| Option value | Vendor tool's display name | Internal codename | Status |
+|---|---|---|---|
+| `14tc_10_molex` | 14TC-10 MOLEX | 4TC-10 MOLEX | untested |
+| `autoterm_air_2d` | AUTOTERM AIR 2D | PLANAR-2MK | untested |
+| `autoterm_air_4d` | AUTOTERM AIR 4D | PLANAR-44MK | untested |
+| `autoterm_air_8d` | AUTOTERM AIR 8D | PLANAR-8D | untested |
+| `autoterm_air_9d` | AUTOTERM AIR 9D | PLANAR-9D | untested |
+| `autoterm_flow_5` | AUTOTERM FLOW 5 | BINAR-5S | **tested** |
+| `binar_5s_next` | BINAR-5S-NEXT | BINAR-5S | untested (byte-identical to Flow 5's data, but not itself tested) |
+| `binar_5s` | BINAR-5S | BINAR-5S | untested (byte-identical to Flow 5's data, but not itself tested) |
+| `planar_2_with_flame_sensor` | PLANAR-2 with flame sensor | PLANAR-2 with flame sensor | untested |
+| `planar_2d` | PLANAR-2D | PLANAR-2D | untested |
+| `planar_2mk` | PLANAR-2MK | PLANAR-2MK | untested |
+| `planar_44d_s_p` | PLANAR-44D-S-P | PLANAR-44D-SP | untested |
+| `planar_44mk` | PLANAR-44MK | PLANAR-44MK | untested |
+| `planar_4d_s_p` | PLANAR-4D-S-P | PLANAR-4D | untested |
+| `planar_4d` | PLANAR-4D | PLANAR-4D | untested |
+| `planar_8d_s_p` | PLANAR-8D-S-P | PLANAR-8D | untested |
+| `planar_9d` | PLANAR-9D | PLANAR-9D | untested |
+| `sputnik_2` | SPUTNIK-2 | SPUTNIK-2 | untested |
+| `sputnik_3` | SPUTNIK-3 | Sputnik-3 | untested |
+
+Several of these share an "internal codename" -- e.g. `autoterm_air_4d`
+and `planar_44mk` are the exact same underlying protocol under a different
+market name in the vendor tool, confirmed from the `.pfl` files
+themselves (not a guess). Selecting either gives identical decoding.
+
+**What stays the same regardless of this setting:** the base 18-byte
+`type0f` protocol, all confirmed commands (Start/Stop/Prevent freezing/
+etc), and the panel-filter fix (the extended frame is still never
+forwarded to the physical panel) -- none of that is profile-specific, all
+of it stays exactly as already confirmed for the 5D/Flow 5 hardware this
+whole project is built against. Only the *decoding* of the extended
+58-byte frame's contents changes.
+
+**Known limitation:** some models expose more temperature-ish registers
+(e.g. separate "in"/"out"/"heat exchanger"/"external sensor" readings)
+than the 4 fixed slots (Flame/Liquid/Overheat/Board temperature) this
+add-on has entities for -- extras beyond the first 4 (prioritized by
+closest name match to Flow 5's own fields) aren't currently exposed. Their
+formulas are still in the add-on's source if you want to add sensors for
+them.
+
 ## Raw traffic capture log
 
 **What it does:** the **Capture raw traffic log** switch turns on a
@@ -159,7 +223,9 @@ for the full explanation) -- plus:
   sensor temperature, Board temperature, Supply voltage, Fault (extended,
   named), Fault code (extended, numeric mirror), Engine state, Relay
   state, Fan current, Capture log file, Capture log size
-- **Sensor** (always available): State code (numeric mirror of `State`)
+- **Sensor** (always available): State code (numeric mirror of `State`),
+  Heater profile (shows the active selection, `(NOT TESTED)` for anything
+  but Flow 5 -- see "Heater profile: other models" above)
 
 `State`, `Mode of operation`, and `Fault (extended, named)` are declared as
 `enum` sensors (a fixed `options` list of every possible value) rather than

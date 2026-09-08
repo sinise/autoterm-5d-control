@@ -63,3 +63,14 @@ configuration:
   capture_log_max_mb:
     name: Capture log size cap (MB)
     description: Per-file size cap for the raw traffic capture log under /config/autoterm_debug.
+  heater_profile:
+    name: Heater profile (extended telemetry)
+    description: >-
+      Which heater model's extended-frame field formulas/state table/fault
+      table to use for decoding the 58-byte extended telemetry frame, read
+      from the vendor diagnostic tool's own per-model data files. ONLY
+      autoterm_flow_5 has been checked against real hardware -- every
+      other option is untested: unverified byte offsets, and it's not
+      even confirmed the extended-telemetry mechanism (PUBR0 handshake,
+      dev02/type01 frame) works the same way on that model at all. See
+      DOCS.md and docs/PROTOCOL.md before selecting anything else.

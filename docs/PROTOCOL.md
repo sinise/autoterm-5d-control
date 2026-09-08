@@ -269,6 +269,21 @@ a real start/stop/cooldown cycle) but this hasn't been independently
 confirmed against a *labeled* 18-byte capture -- the `.pfl` formulas above
 are scoped to this extended frame only, not the panel's own poll.
 
+### Other heater models
+
+The vendor tool ships one `.pfl` profile per heater model (19 total,
+`Profiles/*.pfl`) -- the extended-frame field derivation above was redone
+generically across all of them (same method: read the plaintext formulas
+and state/fault tables, cross-reference `language.res` for labels) and
+baked into `autoterm-debug-addon` as a selectable "heater profile". **Only
+the Flow 5 / BINAR-5S profile used throughout this document is confirmed
+against real hardware** -- every other model's byte offsets, state names,
+and fault names come straight from the vendor tool's own data with zero
+hardware validation, and it isn't even confirmed the `PUBR0`
+handshake/`dev02`/`type01` mechanism applies to those models at all. See
+the add-on's DOCS.md, "Heater profile: other models", for the full list
+and per-model status.
+
 ## New confirmed command: pump-only start
 
 ```

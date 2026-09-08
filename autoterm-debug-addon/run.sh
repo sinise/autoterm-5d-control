@@ -7,6 +7,7 @@ BAUD=$(bashio::config 'baud')
 PREHEAT_DEFAULT=$(bashio::config 'preheat_default_minutes')
 AUTO_TARGET=$(bashio::config 'auto_target_default')
 PREVENT_FREEZING_TARGET=$(bashio::config 'prevent_freezing_target_default')
+HEATER_PROFILE=$(bashio::config 'heater_profile')
 DEBUG_MODE_DEFAULT=$(bashio::config 'debug_mode_default')
 DEBUG_INTERVAL_DEFAULT=$(bashio::config 'debug_interval_seconds_default')
 CAPTURE_LOG_DEFAULT=$(bashio::config 'capture_log_default')
@@ -61,6 +62,7 @@ export AUTOTERM_BAUD="${BAUD}"
 export AUTOTERM_PREHEAT_DEFAULT="${PREHEAT_DEFAULT}"
 export AUTOTERM_AUTO_TARGET_DEFAULT="${AUTO_TARGET}"
 export AUTOTERM_PREVENT_FREEZING_TARGET_DEFAULT="${PREVENT_FREEZING_TARGET}"
+export AUTOTERM_HEATER_PROFILE="${HEATER_PROFILE}"
 export AUTOTERM_MQTT_HOST="${MQTT_HOST}"
 export AUTOTERM_MQTT_PORT="${MQTT_PORT}"
 export AUTOTERM_MQTT_USERNAME="${MQTT_USER}"
@@ -71,6 +73,6 @@ export AUTOTERM_CAPTURE_LOG_DEFAULT="${CAPTURE_LOG_DEFAULT}"
 export AUTOTERM_CAPTURE_LOG_MAX_MB="${CAPTURE_LOG_MAX_MB}"
 export AUTOTERM_CAPTURE_LOG_DIR="/config/autoterm_debug"
 
-bashio::log.info "Starting Autoterm 5D DEBUG bridge: panel=${PANEL_PORT} heater=${HEATER_PORT} mqtt=${MQTT_HOST}:${MQTT_PORT} debug_default=${DEBUG_MODE_DEFAULT} capture_default=${CAPTURE_LOG_DEFAULT}"
+bashio::log.info "Starting Autoterm 5D DEBUG bridge: panel=${PANEL_PORT} heater=${HEATER_PORT} mqtt=${MQTT_HOST}:${MQTT_PORT} debug_default=${DEBUG_MODE_DEFAULT} capture_default=${CAPTURE_LOG_DEFAULT} heater_profile=${HEATER_PROFILE}"
 
 exec python3 /app/autoterm_addon.py

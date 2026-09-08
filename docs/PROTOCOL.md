@@ -156,12 +156,21 @@ the real captured frame ends `0f b0`. Immediately after this was sent, the
 heater began streaming the frame below at ~1/sec, unprompted (no further
 polling needed).
 
-**Important, unconfirmed:** this was only ever observed on a **direct
-PC<->heater connection**, not on the shared panel<->heater bus with the
-physical panel also present. Whether sending `PUBR0` on the live boat bus
-interferes with the panel's own poll cycle or its display has **not** been
-tested. Don't wire this into the live add-on's default behavior without a
-dedicated, supervised hardware test first.
+**Update, now tested on the live boat bus with the physical panel
+connected:** the `PUBR0` handshake itself doesn't disrupt the panel's own
+poll cycle -- a real ~64-minute capture with the handshake being re-sent
+periodically showed completely normal panel query/reply traffic the whole
+time. But **the extended telemetry frame it unlocks does confuse the
+physical panel** if the frame is actually relayed to it (observed
+directly: the panel's own polling degraded over about a minute, then
+collapsed to unparseable garbage, while the heater side -- including the
+extended stream itself -- kept working fine throughout). The panel's
+firmware was clearly never built to receive an unsolicited 65-byte frame
+from `dev02` mid-poll-cycle. The debug add-on (from v1.1.0) filters this
+specific frame out of the heater->panel relay direction so it's decoded
+for its own use but never reaches the panel's wire -- see its DOCS.md.
+Sending `PUBR0` itself toward the heater still shares the live bus, so
+treat it as experimental beyond this specific fix, not risk-free.
 
 Frame: `AA | 02 | 3a 00 | 01 | <58-byte payload> | crc16`. Indices below
 are 0-based into that 58-byte payload.

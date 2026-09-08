@@ -170,6 +170,15 @@ def build_pubr0_frame():
     return body + bytes([crc[1], crc[0]])
 
 
+def is_extended_telemetry_frame(raw):
+    """dev02, type01, 58-byte payload -- the frame unlocked by PUBR0. The
+    physical panel was never designed to receive this and gets visibly
+    confused by it (observed directly on real hardware -- see
+    docs/PROTOCOL.md), so it's filtered out of the HEATER->PANEL relay
+    direction rather than forwarded like everything else."""
+    return len(raw) > 4 and raw[1] == 0x02 and raw[4] == 0x01 and len(raw) - 7 == 58
+
+
 def decode_status_payload(payload):
     """Heater's (dev04) 18-byte type0f payload -> named fields."""
     if len(payload) < 18:
@@ -311,7 +320,10 @@ class CaptureLog:
     def __init__(self, directory, max_mb):
         self.directory = directory
         self.max_bytes = max_mb * 1024 * 1024
-        self.lock = threading.Lock()
+        # Reentrant: note() is called from a logging.Handler, and a couple
+        # of code paths (e.g. the size-cap warning in _write()) log from
+        # inside an already-held lock -- a plain Lock would deadlock there.
+        self.lock = threading.RLock()
         self.fh = None
         self.path = None
         self.bytes_written = 0
@@ -342,7 +354,7 @@ class CaptureLog:
                 self.fh = None
         log.info("capture log stopped")
 
-    def frame(self, ts, sender, raw, crc_ok):
+    def frame(self, ts, sender, raw, crc_ok, note=""):
         with self.lock:
             if not self.enabled or self.fh is None or self.capped:
                 return
@@ -350,8 +362,9 @@ class CaptureLog:
             type_ = raw[4] if len(raw) > 4 else 0
             length = max(0, len(raw) - 7)
             status = "OK " if crc_ok else "BAD"
+            suffix = f"  # {note}" if note else ""
             line = (f"{_iso(ts)}  {sender:<11s}  {status}  "
-                    f"dev={dev:02x} type={type_:02x} len={length:<3d}  {raw.hex(' ')}\n")
+                    f"dev={dev:02x} type={type_:02x} len={length:<3d}  {raw.hex(' ')}{suffix}\n")
             self._write(line)
 
     def stray(self, ts, sender, data):
@@ -366,6 +379,15 @@ class CaptureLog:
                 return
             suffix = f"  # {note}" if note else ""
             self._write(f"{_iso(ts)}  {sender:<11s}  SENT      {raw.hex(' ')}{suffix}\n")
+
+    def note(self, ts, level, msg):
+        """Mirrors an add-on log message into the capture, interleaved
+        chronologically with the traffic -- so one file has both what was
+        on the wire and what the add-on itself was doing/seeing."""
+        with self.lock:
+            if not self.enabled or self.fh is None or self.capped:
+                return
+            self._write(f"{_iso(ts)}  {'log':<11s}  {level:<9s}{msg}\n")
 
     def _write(self, line):
         # caller holds self.lock
@@ -384,6 +406,25 @@ class CaptureLog:
                 "capture_log_file": os.path.basename(self.path) if self.path else None,
                 "capture_log_bytes": self.bytes_written,
             }
+
+
+class CaptureLogHandler(logging.Handler):
+    """Attached to this add-on's own logger so its info/warning/error
+    messages land in the same capture file as the wire traffic, in the
+    same timeline -- e.g. a serial exception or "capture log reached its
+    size cap" shows up right next to the frames around it, instead of
+    needing the Supervisor log pulled separately to explain an anomaly."""
+
+    def __init__(self, capture_log):
+        super().__init__()
+        self.capture_log = capture_log
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+        except Exception:
+            return
+        self.capture_log.note(record.created, record.levelname, msg)
 
 
 class StatusModel:
@@ -497,9 +538,17 @@ class StatusModel:
 
 class Relay(threading.Thread):
     """Transparent byte-for-byte passthrough in one direction, plus decoding
-    and (if enabled) raw capture logging."""
+    and (if enabled) raw capture logging.
 
-    def __init__(self, name, sender_label, src, dst, dst_lock, model, capture_log, stop_evt):
+    With no filter_fn, this forwards bytes immediately (before parsing) to
+    keep passthrough latency minimal -- the base add-on's proven behavior,
+    unchanged. With a filter_fn, it must parse *before* forwarding (holding
+    each frame until it's complete, up to ~1 frame's worth of extra
+    latency) so a matched frame can be withheld instead of written to dst
+    -- used for HEATER->PANEL to stop the extended telemetry frame from
+    ever reaching the physical panel (see is_extended_telemetry_frame)."""
+
+    def __init__(self, name, sender_label, src, dst, dst_lock, model, capture_log, stop_evt, filter_fn=None):
         super().__init__(daemon=True, name=name)
         self.label = name
         self.sender_label = sender_label
@@ -509,6 +558,7 @@ class Relay(threading.Thread):
         self.model = model
         self.capture_log = capture_log
         self.stop_evt = stop_evt
+        self.filter_fn = filter_fn
         self.framer = Framer()
         self.error = None
 
@@ -526,23 +576,55 @@ class Relay(threading.Thread):
                 return
 
             ts = time.time()
-            try:
-                with self.dst_lock:
-                    self.dst.write(data)
-            except serial.SerialException as e:
-                self.error = str(e)
-                log.error("%s write failed: %r", self.label, e)
-                self.stop_evt.set()
-                return
 
+            if self.filter_fn is None:
+                try:
+                    with self.dst_lock:
+                        self.dst.write(data)
+                except serial.SerialException as e:
+                    self.error = str(e)
+                    log.error("%s write failed: %r", self.label, e)
+                    self.stop_evt.set()
+                    return
+
+                for ev in self.framer.feed(data):
+                    if ev[0] == "stray":
+                        self.capture_log.stray(ts, self.sender_label, ev[1])
+                        continue
+                    raw, crc_ok = ev[1], ev[2]
+                    self.capture_log.frame(ts, self.sender_label, raw, crc_ok)
+                    if crc_ok:
+                        self.model.note_frame(ts, self.label, raw)
+                continue
+
+            # Filtering path: must know what a chunk contains before
+            # forwarding it, so parse first and rebuild the output from
+            # the parsed events (byte-identical to the input except for
+            # whatever a matched frame is withheld).
+            out = bytearray()
             for ev in self.framer.feed(data):
                 if ev[0] == "stray":
+                    out += ev[1]
                     self.capture_log.stray(ts, self.sender_label, ev[1])
                     continue
                 raw, crc_ok = ev[1], ev[2]
-                self.capture_log.frame(ts, self.sender_label, raw, crc_ok)
                 if crc_ok:
                     self.model.note_frame(ts, self.label, raw)
+                if crc_ok and self.filter_fn(raw):
+                    self.capture_log.frame(ts, self.sender_label, raw, crc_ok, note="NOT forwarded (filtered)")
+                else:
+                    self.capture_log.frame(ts, self.sender_label, raw, crc_ok)
+                    out += raw
+
+            if out:
+                try:
+                    with self.dst_lock:
+                        self.dst.write(bytes(out))
+                except serial.SerialException as e:
+                    self.error = str(e)
+                    log.error("%s write failed: %r", self.label, e)
+                    self.stop_evt.set()
+                    return
 
 
 class Commander:
@@ -960,6 +1042,9 @@ class Bridge:
         self.capture_log = CaptureLog(cfg["capture_log_dir"], cfg["capture_log_max_mb"])
         if self.model.get_capture_log_wanted():
             self.capture_log.start()
+        self._capture_log_handler = CaptureLogHandler(self.capture_log)
+        self._capture_log_handler.setFormatter(logging.Formatter("%(message)s"))
+        log.addHandler(self._capture_log_handler)
 
         self.panel_ser = serial.Serial(cfg["panel_port"], cfg["baud"], timeout=0.05)
         self.heater_ser = serial.Serial(cfg["heater_port"], cfg["baud"], timeout=0.05)
@@ -973,7 +1058,7 @@ class Bridge:
             self.model, self.capture_log, self.stop_evt)
         self.heater_to_panel = Relay(
             "HEATER->PANEL", "heater", self.heater_ser, self.panel_ser, self.panel_lock,
-            self.model, self.capture_log, self.stop_evt)
+            self.model, self.capture_log, self.stop_evt, filter_fn=is_extended_telemetry_frame)
 
         self.mqtt = mqtt.Client(client_id=f"{NODE_ID}-debug-bridge", clean_session=True)
         if cfg.get("mqtt_username"):
@@ -1117,6 +1202,7 @@ class Bridge:
         self.auto.join(timeout=1.0)
         self.debug_sender.join(timeout=1.0)
         self.capture_log.stop()
+        log.removeHandler(self._capture_log_handler)
         self.panel_ser.close()
         self.heater_ser.close()
 

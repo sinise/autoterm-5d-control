@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.0
+
+- The extended telemetry frame (dev02/type01) is no longer forwarded to
+  the physical panel -- confirmed on real hardware that receiving it
+  visibly confuses the panel's own display. It's still decoded for HA
+  sensors and still logged (marked "NOT forwarded (filtered)") if capture
+  logging is on, it just never reaches the panel's wire anymore.
+- The add-on's own log messages (info/warning/error) are now also written
+  into the capture log, interleaved chronologically with the traffic --
+  one file has everything needed to debug an incident.
+
 ## 1.0.1
 
 - Moved the capture log from `/share/autoterm_debug/` to

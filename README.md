@@ -154,7 +154,10 @@ pump frequency, temperatures, voltage, named operating mode -- see
 `docs/PROTOCOL.md`), sensors for all of it, and a toggleable raw traffic
 capture log saved under `/config/autoterm_debug/` for further analysis. Install it instead
 of `autoterm-addon/`, not alongside it -- see its `DOCS.md` before enabling
-debug mode, it sends an unconfirmed-safe frame on the live bus.
+debug mode, it sends an experimental handshake frame toward the heater on
+the live bus (a known issue where the heater's reply confused the physical
+panel has been fixed by filtering that reply before it reaches the panel,
+but treat it as still experimental beyond that).
 
 ## Roadmap
 

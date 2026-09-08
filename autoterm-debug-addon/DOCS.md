@@ -37,23 +37,20 @@ voltage, and a named operating mode/sub-mode (Low/Middle/High/Ignition
 stages/etc), instead of just the basic 18-byte status. See
 `docs/PROTOCOL.md` for exactly which fields and their formulas.
 
-**Why it's off by default, and why you should watch the panel the first
-time you turn it on:** this handshake has only ever been confirmed safe on
-a *direct* PC<->heater connection with the physical panel disconnected.
-Whether sending it while the panel is also present on the shared bus (as
-it is once this add-on is installed inline) disrupts the panel's own
-status polling or display is **untested**. The relay/passthrough itself is
-never affected -- only the extra handshake frame is at risk of confusing
-the panel's own parsing.
-
-**How to test it safely:** turn on the **Debug mode** switch while
-physically standing at the boat's comfort panel, watching its display.
-Leave the **Debug probe interval** number at a sane value (60s default) so
-you're not spamming the bus. Watch for 15-30 seconds:
-- If the panel's display keeps updating normally (cabin temp, state, etc,
-  same as always) -- probably safe to leave on.
-- If the panel's display freezes, glitches, or stops responding to its own
-  buttons -- turn **Debug mode** off immediately and report what you saw.
+**The 58-byte extended telemetry frame itself never reaches the physical
+panel.** Confirmed directly on real hardware: the panel visibly gets
+confused if it receives that frame (it's not something its own firmware
+was ever designed to parse). Since 1.1.0, the add-on filters that specific
+frame out of the heater->panel relay direction -- it's still decoded for
+the sensors below, and still logged (marked "NOT forwarded (filtered)") if
+capture logging is on, it just never lands on the panel's wire. A real
+~64-minute capture with debug mode on and the panel connected showed
+completely normal panel poll traffic (query/reply every ~2s) the entire
+time once this filter was in place, and a distinct earlier collapse of the
+panel's own polling that resolved once the frame stopped reaching it. The
+PUBR0 handshake itself and the normal panel<->heater bus otherwise are
+still shared, so it's not risk-free to leave running unattended
+indefinitely, but the specific failure mode observed so far is fixed.
 
 There's also a **Send debug handshake now** button, for sending exactly one
 handshake on demand instead of waiting for the periodic timer -- useful for
@@ -79,7 +76,13 @@ frame, and every stray (unparsed) byte -- tagged with who sent it:
 Each line has a timestamp, the sender, CRC status, decoded `dev`/`type`/
 `len` where applicable, and the full frame in hex -- the same convention
 `autoterm_monitor.py` in the main repo uses, so it's directly comparable to
-other captures in this project.
+other captures in this project. Since 1.1.0, the add-on's own log messages
+(info/warning/error -- MQTT status, serial errors, commands sent, etc) are
+also written into this same file, tagged `log`, interleaved chronologically
+with the traffic -- so one file is normally everything needed for further
+analysis. You don't need to separately pull the Supervisor log tab unless
+you're chasing something that happened *before* capture logging was turned
+on, or something the add-on logs at a level below what gets mirrored here.
 
 **Where the log goes:** `/config/autoterm_debug/capture_<timestamp>.log` --
 deliberately `/config`, not `/share`, so it shows up right where the

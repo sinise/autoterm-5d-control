@@ -1,46 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_PROMETHEUS",
-      "label": "Prometheus/VictoriaMetrics",
-      "description": "Datasource that scrapes Home Assistant's /api/prometheus endpoint",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
-    }
-  ],
-  "__requires": [
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "10.0.0"
-    },
-    {
-      "type": "datasource",
-      "id": "prometheus",
-      "name": "Prometheus",
-      "version": "1.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "timeseries",
-      "name": "Time series",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "stat",
-      "name": "Stat",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "state-timeline",
-      "name": "State timeline",
-      "version": ""
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -75,18 +33,19 @@
         "y": 0
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "cfxh0obaj30g0f"
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_cabin_temperature\"}",
           "legendFormat": "Cabin temperature",
-          "refId": "A"
+          "refId": "A",
+          "format": "time_series"
         }
       ],
       "description": "",
@@ -139,18 +98,19 @@
         "y": 0
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "cfxh0obaj30g0f"
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_coolant_temperature\"}",
           "legendFormat": "Coolant temperature",
-          "refId": "A"
+          "refId": "A",
+          "format": "time_series"
         }
       ],
       "description": "",
@@ -199,18 +159,19 @@
         "y": 0
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "cfxh0obaj30g0f"
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_voltage_v{entity=\"sensor.autoterm_5d_heater_supply_voltage\"}",
           "legendFormat": "Supply voltage",
-          "refId": "A"
+          "refId": "A",
+          "format": "time_series"
         }
       ],
       "description": "",
@@ -264,18 +225,19 @@
         "y": 0
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "cfxh0obaj30g0f"
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_fault_code\"}",
           "legendFormat": "Fault code",
-          "refId": "A"
+          "refId": "A",
+          "format": "time_series"
         }
       ],
       "description": "",
@@ -324,18 +286,19 @@
         "y": 0
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "cfxh0obaj30g0f"
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_unit_min{entity=\"sensor.autoterm_5d_heater_elapsed_run_time\"}",
           "legendFormat": "Elapsed run time",
-          "refId": "A"
+          "refId": "A",
+          "format": "time_series"
         }
       ],
       "description": "",
@@ -380,18 +343,19 @@
         "y": 0
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "cfxh0obaj30g0f"
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_binary_sensor_state{entity=\"binary_sensor.autoterm_5d_heater_burner_active\"}",
           "legendFormat": "Burner active",
-          "refId": "A"
+          "refId": "A",
+          "format": "time_series"
         }
       ],
       "description": "",
@@ -457,45 +421,49 @@
         "y": 4
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "cfxh0obaj30g0f"
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_flame_temperature\"}",
           "legendFormat": "Flame temperature",
-          "refId": "A"
+          "refId": "A",
+          "format": "time_series"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_coolant_temperature\"}",
           "legendFormat": "Coolant temperature",
-          "refId": "B"
+          "refId": "B",
+          "format": "time_series"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_measured_revolutions\"}",
           "legendFormat": "Measured revolutions",
-          "refId": "C"
+          "refId": "C",
+          "format": "time_series"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_unit_hz{entity=\"sensor.autoterm_5d_heater_fuel_pump_frequency\"} * 50",
           "legendFormat": "Fuel pump frequency (x50, see panel description)",
-          "refId": "D"
+          "refId": "D",
+          "format": "time_series"
         }
       ],
       "description": "Left axis: temperature (\u00b0C). Right axis: revolutions (raw units) and fuel pump frequency x50 -- frequency is only ~0-5Hz vs. revolutions' ~0-250, so the plotted value is multiplied by 50 purely to be visible on the shared axis (divide by 50 to get the real Hz value; the dedicated 'Fuel pump frequency' panel below shows it unscaled).",
@@ -633,63 +601,69 @@
         "y": 13
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "cfxh0obaj30g0f"
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_flame_temperature\"}",
           "legendFormat": "Flame temperature",
-          "refId": "A"
+          "refId": "A",
+          "format": "time_series"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_liquid_temperature_extended\"}",
           "legendFormat": "Liquid temperature (extended)",
-          "refId": "B"
+          "refId": "B",
+          "format": "time_series"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_coolant_temperature\"}",
           "legendFormat": "Coolant temperature",
-          "refId": "C"
+          "refId": "C",
+          "format": "time_series"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_cabin_temperature\"}",
           "legendFormat": "Cabin temperature",
-          "refId": "D"
+          "refId": "D",
+          "format": "time_series"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_board_temperature\"}",
           "legendFormat": "Board temperature",
-          "refId": "E"
+          "refId": "E",
+          "format": "time_series"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_temperature_celsius{entity=\"sensor.autoterm_5d_heater_overheat_sensor_temperature\"}",
           "legendFormat": "Overheat sensor temperature",
-          "refId": "F"
+          "refId": "F",
+          "format": "time_series"
         }
       ],
       "description": "",
@@ -873,27 +847,29 @@
         "y": 21
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "cfxh0obaj30g0f"
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_defined_revolutions\"}",
           "legendFormat": "Defined revolutions",
-          "refId": "A"
+          "refId": "A",
+          "format": "time_series"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_measured_revolutions\"}",
           "legendFormat": "Measured revolutions",
-          "refId": "B"
+          "refId": "B",
+          "format": "time_series"
         }
       ],
       "description": "Raw units, not RPM -- see docs/PROTOCOL.md. Measured should track defined closely; a growing gap is worth investigating.",
@@ -985,18 +961,19 @@
         "y": 21
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "cfxh0obaj30g0f"
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_unit_hz{entity=\"sensor.autoterm_5d_heater_fuel_pump_frequency\"}",
           "legendFormat": "Fuel pump frequency",
-          "refId": "A"
+          "refId": "A",
+          "format": "time_series"
         }
       ],
       "description": "",
@@ -1065,27 +1042,29 @@
         "y": 29
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "cfxh0obaj30g0f"
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_voltage_v{entity=\"sensor.autoterm_5d_heater_supply_voltage\"}",
           "legendFormat": "Supply voltage",
-          "refId": "A"
+          "refId": "A",
+          "format": "time_series"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_current_ma{entity=\"sensor.autoterm_5d_heater_fan_current\"}",
           "legendFormat": "Fan current",
-          "refId": "B"
+          "refId": "B",
+          "format": "time_series"
         }
       ],
       "description": "",
@@ -1177,27 +1156,29 @@
         "y": 29
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "cfxh0obaj30g0f"
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_unit_min{entity=\"sensor.autoterm_5d_heater_elapsed_run_time\"}",
           "legendFormat": "Elapsed run time",
-          "refId": "A"
+          "refId": "A",
+          "format": "time_series"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_unit_min{entity=\"sensor.autoterm_5d_heater_running_time_extended\"}",
           "legendFormat": "Running time (extended)",
-          "refId": "B"
+          "refId": "B",
+          "format": "time_series"
         }
       ],
       "description": "Elapsed run time (always available) vs. Running time (extended) -- only populated while debug mode's extended telemetry is active. Should track each other closely once both are present.",
@@ -1289,27 +1270,29 @@
         "y": 37
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "cfxh0obaj30g0f"
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_engine_state\"}",
           "legendFormat": "Engine state",
-          "refId": "A"
+          "refId": "A",
+          "format": "time_series"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_relay_state\"}",
           "legendFormat": "Relay state",
-          "refId": "B"
+          "refId": "B",
+          "format": "time_series"
         }
       ],
       "description": "Raw diagnostic codes, not individually decoded yet -- useful for spotting when they change, not (yet) for reading a specific meaning off the value.",
@@ -1401,45 +1384,49 @@
         "y": 44
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "cfxh0obaj30g0f"
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_binary_sensor_state{entity=\"binary_sensor.autoterm_5d_heater_burner_active\"}",
           "legendFormat": "Burner active",
-          "refId": "A"
+          "refId": "A",
+          "format": "time_series"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_binary_sensor_state{entity=\"binary_sensor.autoterm_5d_heater_glow_plug\"}",
           "legendFormat": "Glow plug",
-          "refId": "B"
+          "refId": "B",
+          "format": "time_series"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_binary_sensor_state{entity=\"binary_sensor.autoterm_5d_heater_telemetry_stale\"}",
           "legendFormat": "Telemetry stale",
-          "refId": "C"
+          "refId": "C",
+          "format": "time_series"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_binary_sensor_state{entity=\"binary_sensor.autoterm_5d_heater_extended_telemetry_active\"}",
           "legendFormat": "Extended telemetry active",
-          "refId": "D"
+          "refId": "D",
+          "format": "time_series"
         }
       ],
       "description": "",
@@ -1491,18 +1478,19 @@
         "y": 50
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "cfxh0obaj30g0f"
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_state\"}",
           "legendFormat": "{{state}}",
-          "refId": "A"
+          "refId": "A",
+          "format": "time_series"
         }
       ],
       "description": "idle / running / late-run / cooldown / final-shutdown -- from the base 18-byte status frame, always available.",
@@ -1554,18 +1542,19 @@
         "y": 55
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "cfxh0obaj30g0f"
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_mode_of_operation\"}",
           "legendFormat": "{{state}}",
-          "refId": "A"
+          "refId": "A",
+          "format": "time_series"
         }
       ],
       "description": "Named state/substate from the extended telemetry frame (Low/Middle/High/ignition stages/etc) -- only populated while Extended telemetry active is on.",
@@ -1617,18 +1606,19 @@
         "y": 63
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "cfxh0obaj30g0f"
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "cfxh0obaj30g0f"
           },
           "expr": "homeassistant_sensor_state{entity=\"sensor.autoterm_5d_heater_fault_extended_named\"}",
           "legendFormat": "{{state}}",
-          "refId": "A"
+          "refId": "A",
+          "format": "time_series"
         }
       ],
       "description": "Named fault from the extended frame -- partial table, only 'No faults' cross-validated so far. The numeric Fault code panel above is the more reliable one for alerting.",

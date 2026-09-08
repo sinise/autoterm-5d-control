@@ -1,9 +1,9 @@
 # Grafana dashboard
 
 `autoterm-5d-dashboard.json` -- a dashboard for the Autoterm 5D Heater
-metrics, built against the specific Prometheus/VictoriaMetrics metric names
-Home Assistant's built-in Prometheus integration produces for these
-entities (confirmed against a real instance, not guessed).
+metrics, built against the specific metric names Home Assistant's built-in
+Prometheus integration produces for these entities (confirmed against a
+real instance via Grafana Explore, not guessed).
 
 ## Requires
 
@@ -17,12 +17,32 @@ entities (confirmed against a real instance, not guessed).
   temperature, Fan current) only populate while the **Debug** add-on's
   Debug mode is on and Extended telemetry active.
 
+## Datasource is hardcoded, not a prompted import input
+
+Every panel's `datasource` is hardcoded to
+`{"type": "victoriametrics-metrics-datasource", "uid": "cfxh0obaj30g0f"}` --
+the dedicated VictoriaMetrics Grafana plugin (not the generic "Prometheus"
+datasource type), at the UID it has on the instance this was built for.
+An earlier version of this file used Grafana's `__inputs`/`${DS_...}`
+mechanism to prompt for a datasource on import instead, but that assumed
+the generic Prometheus plugin -- this instance uses the VictoriaMetrics
+plugin specifically, and there was no matching datasource type to select,
+so import failed outright.
+
+**If you're importing this into a different Grafana instance** (or this
+one after re-adding the datasource with a new UID), find/replace
+`cfxh0obaj30g0f` throughout the file with your own datasource UID first
+(Grafana -> Connections -> Data sources -> click your VictoriaMetrics
+source -> the UID is in the URL). If your instance uses the generic
+Prometheus datasource plugin instead of the VictoriaMetrics one, also
+change `"type": "victoriametrics-metrics-datasource"` to `"type":
+"prometheus"` throughout.
+
 ## Importing
 
 Grafana -> Dashboards -> New -> Import -> upload
-`autoterm-5d-dashboard.json`. It'll prompt you to pick your
-Prometheus/VictoriaMetrics datasource on import (via the `DS_PROMETHEUS`
-input) -- everything else works as-is.
+`autoterm-5d-dashboard.json`. No prompts -- it should just work against the
+datasource baked in above.
 
 ## Panels
 

@@ -126,6 +126,159 @@ frame took the heater from actively running to a full clean stop-and-idle
 cycle (~4 minutes) with zero fault, matching real button-press behavior
 exactly.
 
+## Extended diagnostic-mode telemetry (dev `0x02`, type `0x01`, 58-byte payload)
+
+The vendor's own Windows diagnostic tool ("Autoterm Test") talks to the
+heater directly (spoofing the panel identity, same as this project's own
+command injection) and gets back a much richer ~1/sec status frame than the
+18-byte `type0f` poll above. Recovered by capturing real traffic between
+that tool and a real heater (profile: **Flow 5** / internally `BINAR-5S`)
+with a non-intrusive Windows serial sniffer -- not from decompiling the
+tool itself. Confirmed against a real session: pump start -> pump stop ->
+heater start -> ramp to high -> stop -> full cooldown -> idle, cross-checked
+against the timestamps and durations the user reported for that exact
+sequence.
+
+**Getting the heater to send this frame** requires a literal 15-byte
+handshake command first, observed once at the start of the tool's session:
+
+```
+aa 50 55 42 52 30 00 00 00 ff ff ff ff 0f b0
+```
+
+(`50 55 42 52 30` is ASCII `"PUBR0"`.) This is a fixed literal, not
+`dev/len/type/payload` framing like the rest of the protocol. The CRC is
+the same CRC-16/MODBUS over the whole frame, but transmitted
+**least-significant-byte first** -- the reverse of every other frame in
+this protocol (which are MSB-first). Caught by a byte-order mismatch when
+first implementing this: `crc_bytes()` computed `b0 0f` for this body, but
+the real captured frame ends `0f b0`. Immediately after this was sent, the
+heater began streaming the frame below at ~1/sec, unprompted (no further
+polling needed).
+
+**Important, unconfirmed:** this was only ever observed on a **direct
+PC<->heater connection**, not on the shared panel<->heater bus with the
+physical panel also present. Whether sending `PUBR0` on the live boat bus
+interferes with the panel's own poll cycle or its display has **not** been
+tested. Don't wire this into the live add-on's default behavior without a
+dedicated, supervised hardware test first.
+
+Frame: `AA | 02 | 3a 00 | 01 | <58-byte payload> | crc16`. Indices below
+are 0-based into that 58-byte payload.
+
+**Field offsets and names are not guessed** -- the vendor tool ships a
+plaintext `.pfl` "profile" per heater model (`Profiles/AUTOTERM FLOW 5.pfl`
+here) that literally spells out, per field, a byte-offset formula and an
+index into the tool's own string table (`language.res`). That's a
+straight text-file read, not a decompile of the executable. Every formula
+below is the vendor's own, cross-checked against the real capture (see the
+state table further down, and the physically-sane values it produces --
+flame temperature jumping from ~50 to 200+ on ignition, fuel pump
+frequency landing in the real ~1.5-4 Hz range, voltage sagging to 11.0V
+during glow-plug draw, etc).
+
+| Idx | Field | Formula (0-based payload offset) | Notes |
+|---|---|---|---|
+| `[0]`, `[1]` | Mode of operation of the product | state=`[0]`, substate=`[1]` -> lookup table below | |
+| `[2..4]` | Running time | `[2]*65536 + [3]*256 + [4]`, seconds | 3-byte big-endian counter (not 1 byte -- an earlier pass here mistook the low byte alone for a counter that "wraps at 256"; it doesn't, it's just the low byte of this). Freezes at idle, doesn't reset. |
+| `[11]` | Defined Revolutions | `[11]` | Blower target, raw units. `0` in idle/pump-only, climbs through ignition or `Voltage 0` |
+| `[12]` | Measured Revolutions | `[12]` | Blower actual, raw units. Tracks `[11]` closely (occasionally trails by 1) -- a real closed-loop pair. |
+| `[13]` | Glow Plug | `[13] > 0` | Boolean. `True` through the ignition ramp, `False` once running/pump-only/cooldown. |
+| `[15]` | Fuel pump frequency | `[15] / 10`, Hz | `0` except while actually burning; climbed 1.7 -> 3.0 -> 3.8 Hz during the ramp to High, dropped to `0` immediately on Stop (well before the fan-purge cooldown finished). |
+| `[17..18]` | Flame temperature | `([17]*256 + [18]) - 273`, °C | Kelvin-to-Celsius. ~51°C baseline (no flame) -> 212-221°C once burning. |
+| `[19]` | Liquid temperature | `[19]`, °C | |
+| `[20]` | Overheat temperature | `[20]`, °C | |
+| `[21]` | Board temperature | `[21]`, °C | |
+| `[22..23]` | Voltage | `([22]*256 + [23]) / 10`, V | ~12.5-12.9V steady; dipped to 11.0V during one glow-plug-draw sample -- plausible real sag, not noise. |
+| `[36]` | Fault code | `[36]` | `0` throughout this capture (no fault occurred). Presumably the same code space as the 18-byte frame's `[2]`, not independently confirmed. |
+| `[51]` | Engine state | `[51]` | Always `0` in this capture -- likely only meaningful on vehicle-integrated variants. |
+| `[52]` | Relay state | `[52]` | `0` at idle/pump-only/cooldown, `1` while the ignition sequence and running are active. Probably a bitmask; only bit 0 was ever exercised here. |
+| `[54..55]` | Fan current | `[54]*256 + [55]`, presumably mA | Always `0` in this capture -- unconfirmed whether this model actually populates it. |
+
+Everything else in the 58 bytes is either constant across this one capture
+or too noisy to characterize yet -- treat unlisted offsets as unmapped, not
+"zero"/unused. One profile field (`Stage/Mode`, formula `[0] + [1]/10`) is
+just a decimal-display alternate of the same two state bytes, not a
+separate piece of data.
+
+### State/substate name table
+
+The `.pfl` defines the "Mode of operation" display as a lookup:
+`index = state*10 + substate`, indexing into a table of `language.res`
+string-table indices (44 entries, `state` 0-4 x `substate` 0-9, unused
+combinations point at `"unknown"`). Every value below is the vendor's own
+English string, and every transition actually seen in the real capture
+(the pump/heat/ramp-to-high/stop/cooldown sequence) landed on a
+physically-sensible name:
+
+| state | substate | Name | Seen in capture? |
+|---|---|---|---|
+| 0 | 1 | waiting for a command (idle) | yes |
+| 1 | 0 | waiting for temperature reduction | no |
+| 1 | 1 | locked | no |
+| 2 | 0 | cooling | yes (briefly, 1s, right as ignition begins) |
+| 2 | 1 | glow plug warming up | yes |
+| 2 | 2 | preparation for ignition | no |
+| 2 | 3 | Ignition 1 | yes |
+| 2 | 4 | Ignition 2 | no |
+| 2 | 5 | blowing | no |
+| 2 | 6 | combustion chamber heating | yes |
+| 2 | 7 | blowing | no |
+| 3 | 0 | low | no (this run never dropped to Low) |
+| 3 | 2 | **High** | yes |
+| 3 | 4 | blowing | no |
+| 3 | 5 | waiting | no |
+| 3 | 6 | blowing | no |
+| 3 | 7 | pump only | yes |
+| 3 | 8 | **middle** | yes |
+| 4 | 0 | blowing (cooldown/fan-purge) | yes |
+| 4 | 3 | shutting down | no |
+
+This directly answers what "High"/"Medium" meant in the diagnostic tool's
+UI: state `3` covers all of Low/Middle/High/pump-only-vent, and it's the
+*substate* byte that actually names the power level -- `0`=low, `8`=middle
+("Medium" in the tool's own wording elsewhere, English base string is
+"middle"), `2`=High. In this capture, `3.8` (middle) held for ~2 seconds
+right after the ignition ramp finished, then `3.2` (High) held until Stop
+-- consistent with the heater briefly settling at a lower level before
+ramping to the commanded target.
+
+The 18-byte frame's `[0]`/`[1]` almost certainly share this same
+underlying firmware state machine (same value range, same behavior across
+a real start/stop/cooldown cycle) but this hasn't been independently
+confirmed against a *labeled* 18-byte capture -- the `.pfl` formulas above
+are scoped to this extended frame only, not the panel's own poll.
+
+## New confirmed command: pump-only start
+
+```
+dev 0x03, type 0x21, payload = 00 28
+```
+
+Sent impersonating the panel, exactly like the commands below. The heater
+(`dev 0x04`) echoed it back within the same second (`type 0x21`, payload
+`00 28 00`), and the extended state/substate above went to `0x03`/`0x07`
+("late-run"/vent) for the observed ~11-second pump-only run. The existing
+`type03` empty-payload **Stop** command (below) stopped it -- confirming
+`type03` is a general "stop whatever's active" command, not heat-specific.
+Only one payload value (`00 28`) has been observed; whether it's
+configurable (e.g. a duration or fan-speed target) or a fixed marker like
+`type01`'s preheat marker is untested.
+
+Because this uses the same spoofed-panel identity and the same live
+panel<->heater bus as the already-confirmed Start/Stop commands (not the
+direct-connection diagnostic mode above), it carries the same risk profile
+as those and is reasonable to wire into the add-on the same way.
+
+Curiosity, not yet explained: the `.pfl` profile itself labels its own
+"pump start" UI button with the reference `19,30` (its own internal
+command-id notation, alongside a literal `2400` baud field), which doesn't
+obviously correspond to `type 0x21, payload 00 28` byte-for-byte. The real
+captured wire bytes are what's documented and used here -- they're
+directly observed, CRC-valid, echoed back by the heater, and produced the
+correct physical state transition. The `.pfl` reference is left as an
+open question in case it becomes relevant when profiling other models.
+
 ## What's still open
 
 - The `type04`/`type06` unprompted messages (5-byte payloads, ~7 min apart,
@@ -140,3 +293,13 @@ exactly.
   computed from wire time (bytes-since-start), not read()-completion time --
   see the monitor script's comments if reusing this for new timing-sensitive
   analysis.
+- Whether the 18-byte `type0f` frame carries any of the extended frame's
+  fields (voltage, revolutions, fuel pump frequency, fan current, board/
+  liquid/overheat temp) at one of its currently-undocumented offsets
+  (`[5]`, `[8]`, `[10]`, `[13]`, `[14]`, `[15]`, `[17]`). The vendor `.pfl`
+  profile only defines formulas for the extended frame above, not this one
+  -- filling these in needs a fresh real capture of actual panel<->heater
+  traffic (`autoterm_monitor.py`), diffed the same way, ideally with the
+  panel's own display readings noted alongside for cross-checking. It's
+  equally possible the panel simply isn't sent this data at all (a simple
+  LCD may not need voltage/fan-current), not that it's hiding undecoded.

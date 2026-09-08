@@ -96,7 +96,9 @@ A single "Autoterm 5D Heater" device in Home Assistant with:
   temperature and burner state as HVAC action
 - **Number**: Preheat duration (minutes), used by the Start preheat button
 - **Buttons**: Start preheat, Start thermostat (manual, one-shot -- distinct
-  from the climate entity's automatic loop), Stop
+  from the climate entity's automatic loop), Stop, Start pump (ventilation
+  only, no combustion -- runs the circulation fan/pump without heat; stop it
+  with the same Stop button)
 
 All confirmed protocol commands (start preheat/thermostat, stop) and the
 device-role/frame-format knowledge this relies on are reused byte-for-byte

@@ -1,5 +1,5 @@
 name: Autoterm 5D
-version: "1.0.0"
+version: "1.1.0"
 slug: autoterm5d
 description: >-
   Controls an Autoterm 5D diesel heater and its comfort panel over UART,

@@ -360,6 +360,14 @@ class Commander:
         log.info("requested: stop")
         self._send(0x03, 0x03)
 
+    def start_pump(self):
+        # type 0x21, payload 00 28 -- confirmed against a real capture
+        # (see docs/PROTOCOL.md, "New confirmed command: pump-only start").
+        # Only this exact payload has been observed; it's sent verbatim
+        # rather than parameterized since nothing else is confirmed safe.
+        log.info("requested: start pump (ventilation only)")
+        self._send(0x03, 0x21, bytes([0x00, 0x28]))
+
 
 class AutoThermostat(threading.Thread):
     """Software hysteresis loop: stop at target+1, start (thermostat mode) at
@@ -531,6 +539,10 @@ def discovery_configs():
         "command_topic": f"{CMD_PREFIX}/stop",
         "icon": "mdi:stop-circle-outline",
     }))
+    entries.append((f"{DISCOVERY_PREFIX}/button/{NODE_ID}/start_pump/config", {
+        **base, "name": "Start pump (ventilation only)", "unique_id": f"{NODE_ID}_start_pump",
+        "command_topic": f"{CMD_PREFIX}/start_pump", "icon": "mdi:fan",
+    }))
 
     return entries
 
@@ -575,7 +587,7 @@ class Bridge:
         client.publish(AVAILABILITY_TOPIC, "online", retain=True)
         for suffix in (
             "auto_mode/set", "auto_target/set", "preheat_minutes/set",
-            "start_preheat", "start_thermostat", "stop",
+            "start_preheat", "start_thermostat", "stop", "start_pump",
         ):
             client.subscribe(f"{CMD_PREFIX}/{suffix}")
         self._publish_state()
@@ -604,6 +616,8 @@ class Bridge:
             self.commander.start_thermostat()
         elif suffix == "stop":
             self.commander.stop()
+        elif suffix == "start_pump":
+            self.commander.start_pump()
         elif suffix == "preheat_minutes/set":
             self.model.set_preheat_minutes(max(1, min(int(float(payload)), 600)))
         elif suffix == "auto_mode/set":

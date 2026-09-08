@@ -1,5 +1,5 @@
 name: Autoterm 5D
-version: "1.1.0"
+version: "1.2.0"
 slug: autoterm5d
 description: >-
   Controls an Autoterm 5D diesel heater and its comfort panel over UART,
@@ -26,6 +26,7 @@ options:
   autodiscover_ports: false
   preheat_default_minutes: 30
   auto_target_default: 20.0
+  prevent_freezing_target_default: 5.0
   mqtt_host: ""
   mqtt_port: 1883
   mqtt_username: ""
@@ -37,6 +38,7 @@ schema:
   autodiscover_ports: bool
   preheat_default_minutes: int(1,600)
   auto_target_default: float(5,35)
+  prevent_freezing_target_default: float(0,10)
   mqtt_host: str?
   mqtt_port: port?
   mqtt_username: str?

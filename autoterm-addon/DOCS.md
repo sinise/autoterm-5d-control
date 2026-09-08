@@ -42,6 +42,7 @@ this to different hardware.
 | `autodiscover_ports` | If `true`, probe for the correct ports on every startup instead of trusting `panel_port`/`heater_port` -- see below |
 | `preheat_default_minutes` | Initial value of the Preheat duration entity |
 | `auto_target_default` | Initial target for the auto-thermostat climate entity |
+| `prevent_freezing_target_default` | Initial value of the Prevent freezing target entity (0-10°C) -- see below |
 | `mqtt_host`/`mqtt_port`/`mqtt_username`/`mqtt_password` | Only used as a fallback if no MQTT service (e.g. the Mosquitto broker add-on) is auto-discovered |
 
 If you have the official **Mosquitto broker** add-on (or any add-on
@@ -94,7 +95,9 @@ A single "Autoterm 5D Heater" device in Home Assistant with:
   add-on's own software hysteresis loop (stops the heater at target+1°C,
   starts it at target-1°C in thermostat mode); shows current cabin
   temperature and burner state as HVAC action
-- **Number**: Preheat duration (minutes), used by the Start preheat button
+- **Number**: Preheat duration (minutes), used by the Start preheat button;
+  Prevent freezing target (°C, 0-10)
+- **Switch**: Prevent freezing -- see below
 - **Buttons**: Start preheat, Start thermostat (manual, one-shot -- distinct
   from the climate entity's automatic loop), Stop, Start pump (ventilation
   only, no combustion -- runs the circulation fan/pump without heat; stop it
@@ -106,11 +109,36 @@ from `autoterm_web.py`/`docs/PROTOCOL.md` in the main repo -- not
 re-derived. The auto-thermostat hysteresis logic is also unchanged from
 there.
 
+## Prevent freezing
+
+An independent frost-protection safety net, separate from the auto-
+thermostat climate entity above. When the **Prevent freezing** switch is
+on, the heater is started (thermostat mode) whenever cabin temperature
+reaches the **Prevent freezing target** (0-10°C) -- **regardless of
+whether the auto-thermostat climate entity is on or off, and regardless of
+a prior manual Stop.** That's the point of the feature: it can't be
+silently defeated by turning normal heating off or pressing Stop once --
+only turning the Prevent freezing switch itself off disables it.
+
+It won't fight anything else, though: it never stops a heater run it
+didn't start (so it doesn't interrupt the auto-thermostat's own comfort
+run, or a manual preheat session, or another admin's separate Start), and
+if you disable Prevent freezing while it's mid-run, that run is left
+running rather than cut off abruptly -- something else (manual Stop, the
+auto-thermostat) needs to end it.
+
+**Practical implication:** if it's cold and Prevent freezing is on, a
+plain Stop button press won't keep the heater off -- it'll restart within
+seconds once cabin temperature is still at/below the floor. To actually
+stop the heater in that situation, turn off Prevent freezing first (or
+raise its target below the current cabin temperature).
+
 ## Persistence
 
-Preheat duration and the auto-thermostat's enabled/target settings are
-saved to the add-on's `/data` volume, so they survive an add-on restart
-without falling back to the config defaults above.
+Preheat duration, the auto-thermostat's enabled/target settings, and
+Prevent freezing's enabled/target settings are saved to the add-on's
+`/data` volume, so they survive an add-on restart without falling back to
+the config defaults above.
 
 ## Troubleshooting
 

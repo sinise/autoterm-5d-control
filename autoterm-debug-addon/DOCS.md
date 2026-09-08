@@ -131,7 +131,11 @@ only matter on a fresh install or if `/data` is cleared.
 
 ## What you get
 
-Everything the regular add-on's device has, plus:
+Everything the regular add-on's device has -- including the **Prevent
+freezing** switch/target (frost-protection safety net, starts the heater
+regardless of the auto-thermostat's state or a prior manual Stop -- see
+the [regular add-on's DOCS.md](../autoterm-addon/DOCS.md#prevent-freezing)
+for the full explanation) -- plus:
 
 - **Switch**: Debug mode, Capture raw traffic log
 - **Number**: Debug probe interval (seconds)

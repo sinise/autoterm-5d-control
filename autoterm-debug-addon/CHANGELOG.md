@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.0
+
+- Added a "Prevent freezing" switch and target (0-10°C), mirrored from the
+  Autoterm 5D add-on 1.2.0: an independent frost-protection safety net
+  that starts the heater whenever cabin temperature reaches the floor,
+  regardless of the auto-thermostat's own state or a prior manual Stop.
+
 ## 1.2.0
 
 - `State`, `Mode of operation`, and `Fault (extended, named)` are now

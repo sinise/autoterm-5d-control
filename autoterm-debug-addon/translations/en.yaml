@@ -27,6 +27,14 @@ configuration:
   auto_target_default:
     name: Default auto-thermostat target (°C)
     description: Initial target temperature for the software auto-thermostat climate entity.
+  prevent_freezing_target_default:
+    name: Default frost-protection floor (°C)
+    description: >-
+      Initial value of the Prevent freezing target number entity (0-10°C).
+      Live-togglable/adjustable from Home Assistant afterward -- see
+      DOCS.md. Starts the heater whenever cabin temperature reaches this
+      floor, regardless of the auto-thermostat's own state or a prior
+      manual Stop.
   mqtt_host:
     name: MQTT host (fallback)
     description: Only used if no MQTT service is discovered automatically (e.g. no Mosquitto add-on installed).

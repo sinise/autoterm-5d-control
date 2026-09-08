@@ -518,7 +518,10 @@ class StatusModel:
         with self.lock:
             return self.capture_log_wanted
 
-    def snapshot(self, auto_snapshot, capture_status):
+    def snapshot(self, auto_snapshot=None, pf_snapshot=None, capture_status=None):
+        auto_snapshot = auto_snapshot or {}
+        pf_snapshot = pf_snapshot or {}
+        capture_status = capture_status or {}
         with self.lock:
             now = time.time()
             status_age = None if self.status_ts is None else now - self.status_ts
@@ -542,9 +545,12 @@ class StatusModel:
             }
             snap.update(self.status)
             snap.update(self.extended)
-            snap["auto_enabled"] = auto_snapshot["enabled"]
-            snap["auto_target"] = auto_snapshot["target"]
-            snap["auto_last_note"] = auto_snapshot["last_note"]
+            snap["auto_enabled"] = auto_snapshot.get("enabled")
+            snap["auto_target"] = auto_snapshot.get("target")
+            snap["auto_last_note"] = auto_snapshot.get("last_note")
+            snap["prevent_freezing_enabled"] = pf_snapshot.get("enabled")
+            snap["prevent_freezing_target"] = pf_snapshot.get("target")
+            snap["prevent_freezing_last_note"] = pf_snapshot.get("last_note")
             snap.update(capture_status)
             return snap
 
@@ -783,7 +789,7 @@ class AutoThermostat(threading.Thread):
             if now - self.last_action_ts < self.MIN_ACTION_INTERVAL:
                 continue
 
-            snap = self.model.snapshot(self.snapshot(), {})
+            snap = self.model.snapshot()
             cabin, age = snap["cabin_temp"], snap["cabin_temp_age"]
             state = snap.get("state")
             if cabin is None or age is None or age > self.MAX_READING_AGE or state is None:
@@ -810,6 +816,95 @@ class AutoThermostat(threading.Thread):
                         self.last_note = note
             except Exception as e:
                 log.error("AUTO action failed: %r", e)
+
+
+class PreventFreezing(threading.Thread):
+    """Independent frost-protection safety net: starts the heater
+    (thermostat mode) whenever cabin temperature reaches the configured
+    floor, REGARDLESS of the auto-thermostat's own enabled state or a prior
+    manual Stop -- the whole point is that it can't be silently defeated by
+    turning the normal comfort thermostat off or pressing Stop once.
+    Disabling this feature itself is the only way to turn it off.
+
+    Never stops a heater run it didn't start itself (tracked via
+    started_by_me), so it doesn't fight the auto-thermostat or a manual
+    preheat session that's running for an unrelated reason. Also never
+    aborts a run it did start just because it's disabled mid-run --
+    disabling relinquishes responsibility for that run rather than cutting
+    heat abruptly; something else (manual Stop, auto-thermostat) ends it."""
+
+    HYSTERESIS = 1.0
+    MIN_ACTION_INTERVAL = 90.0
+    MAX_READING_AGE = 10.0
+    POLL_INTERVAL = 3.0
+
+    def __init__(self, model, commander, stop_evt, target_default):
+        super().__init__(daemon=True, name="prevent-freezing")
+        self.model = model
+        self.commander = commander
+        self.stop_evt = stop_evt
+        self.lock = threading.Lock()
+        persisted = load_persisted()
+        self.enabled = persisted.get("prevent_freezing_enabled", False)
+        self.target = persisted.get("prevent_freezing_target", target_default)
+        self.last_action_ts = 0.0
+        self.last_note = None
+        self.started_by_me = False
+
+    def configure(self, enabled=None, target=None):
+        with self.lock:
+            if enabled is not None:
+                self.enabled = bool(enabled)
+            if target is not None:
+                self.target = max(0.0, min(float(target), 10.0))
+            persisted = load_persisted()
+            persisted["prevent_freezing_enabled"] = self.enabled
+            persisted["prevent_freezing_target"] = self.target
+        save_persisted(persisted)
+
+    def snapshot(self):
+        with self.lock:
+            return {"enabled": self.enabled, "target": self.target, "last_note": self.last_note}
+
+    def run(self):
+        while not self.stop_evt.wait(self.POLL_INTERVAL):
+            with self.lock:
+                enabled, target = self.enabled, self.target
+            if not enabled:
+                self.started_by_me = False
+                continue
+            now = time.time()
+            if now - self.last_action_ts < self.MIN_ACTION_INTERVAL:
+                continue
+
+            snap = self.model.snapshot()
+            cabin, age = snap["cabin_temp"], snap["cabin_temp_age"]
+            state = snap.get("state")
+            if cabin is None or age is None or age > self.MAX_READING_AGE or state is None:
+                continue
+
+            if state == "idle":
+                self.started_by_me = False
+
+            try:
+                if cabin <= target and state == "idle":
+                    note = f"cabin {cabin} <= {target} (frost floor) -> start thermostat"
+                    log.info("PREVENT-FREEZING %s", note)
+                    self.commander.start_thermostat()
+                    self.last_action_ts = now
+                    self.started_by_me = True
+                    with self.lock:
+                        self.last_note = note
+                elif self.started_by_me and cabin >= target + self.HYSTERESIS and state != "idle":
+                    note = f"cabin {cabin} >= {target + self.HYSTERESIS} -> stop (frost-protection run ending)"
+                    log.info("PREVENT-FREEZING %s", note)
+                    self.commander.stop()
+                    self.last_action_ts = now
+                    self.started_by_me = False
+                    with self.lock:
+                        self.last_note = note
+            except Exception as e:
+                log.error("PREVENT-FREEZING action failed: %r", e)
 
 
 def discovery_configs():
@@ -907,6 +1002,20 @@ def discovery_configs():
     entries.append((f"{DISCOVERY_PREFIX}/button/{NODE_ID}/start_pump/config", {
         **base, "name": "Start pump (ventilation only)", "unique_id": f"{NODE_ID}_start_pump",
         "command_topic": f"{CMD_PREFIX}/start_pump", "icon": "mdi:fan",
+    }))
+
+    entries.append((f"{DISCOVERY_PREFIX}/switch/{NODE_ID}/prevent_freezing/config", {
+        **base, "name": "Prevent freezing", "unique_id": f"{NODE_ID}_prevent_freezing",
+        "state_topic": STATE_TOPIC,
+        "value_template": "{{ 'ON' if value_json.prevent_freezing_enabled else 'OFF' }}",
+        "command_topic": f"{CMD_PREFIX}/prevent_freezing/set", "icon": "mdi:snowflake-alert",
+    }))
+    entries.append((f"{DISCOVERY_PREFIX}/number/{NODE_ID}/prevent_freezing_target/config", {
+        **base, "name": "Prevent freezing target", "unique_id": f"{NODE_ID}_prevent_freezing_target",
+        "command_topic": f"{CMD_PREFIX}/prevent_freezing_target/set",
+        "state_topic": STATE_TOPIC, "value_template": blank_to_none("prevent_freezing_target"),
+        "min": 0, "max": 10, "step": 0.5, "unit_of_measurement": "°C", "mode": "box",
+        "icon": "mdi:thermometer-low",
     }))
 
     # -- debug controls -----------------------------------------------------
@@ -1067,6 +1176,8 @@ class Bridge:
 
         self.commander = Commander(self.heater_ser, self.heater_lock, self.model, self.capture_log)
         self.auto = AutoThermostat(self.model, self.commander, self.stop_evt, cfg["auto_target_default"])
+        self.prevent_freezing = PreventFreezing(
+            self.model, self.commander, self.stop_evt, cfg["prevent_freezing_target_default"])
         self.debug_sender = DebugSender(self.heater_ser, self.heater_lock, self.model, self.capture_log, self.stop_evt)
 
         self.panel_to_heater = Relay(
@@ -1096,6 +1207,7 @@ class Bridge:
         for suffix in (
             "auto_mode/set", "auto_target/set", "preheat_minutes/set",
             "start_preheat", "start_thermostat", "stop", "start_pump",
+            "prevent_freezing/set", "prevent_freezing_target/set",
             "debug_mode/set", "debug_interval/set", "send_debug_handshake",
             "capture_log/set",
         ):
@@ -1134,6 +1246,10 @@ class Bridge:
             self.auto.configure(enabled=(payload.lower() == "heat"))
         elif suffix == "auto_target/set":
             self.auto.configure(target=float(payload))
+        elif suffix == "prevent_freezing/set":
+            self.prevent_freezing.configure(enabled=(payload.upper() == "ON"))
+        elif suffix == "prevent_freezing_target/set":
+            self.prevent_freezing.configure(target=float(payload))
         elif suffix == "debug_mode/set":
             self.model.set_debug_mode(payload.upper() == "ON")
         elif suffix == "debug_interval/set":
@@ -1151,7 +1267,7 @@ class Bridge:
             log.warning("unhandled command topic %s", topic)
 
     def _publish_state(self):
-        snap = self.model.snapshot(self.auto.snapshot(), self.capture_log.status())
+        snap = self.model.snapshot(self.auto.snapshot(), self.prevent_freezing.snapshot(), self.capture_log.status())
         self.mqtt.publish(STATE_TOPIC, json.dumps(snap), retain=True)
 
     def _heartbeat(self):
@@ -1167,6 +1283,7 @@ class Bridge:
         self.panel_to_heater.start()
         self.heater_to_panel.start()
         self.auto.start()
+        self.prevent_freezing.start()
         self.debug_sender.start()
         threading.Thread(target=self._command_worker, daemon=True).start()
         threading.Thread(target=self._heartbeat, daemon=True).start()
@@ -1216,6 +1333,7 @@ class Bridge:
         self.panel_to_heater.join(timeout=1.0)
         self.heater_to_panel.join(timeout=1.0)
         self.auto.join(timeout=1.0)
+        self.prevent_freezing.join(timeout=1.0)
         self.debug_sender.join(timeout=1.0)
         self.capture_log.stop()
         log.removeHandler(self._capture_log_handler)
@@ -1244,6 +1362,7 @@ def cfg_from_env():
         "baud": env_int("AUTOTERM_BAUD", 2400),
         "preheat_default": env_int("AUTOTERM_PREHEAT_DEFAULT", 30),
         "auto_target_default": env_float("AUTOTERM_AUTO_TARGET_DEFAULT", 20.0),
+        "prevent_freezing_target_default": env_float("AUTOTERM_PREVENT_FREEZING_TARGET_DEFAULT", 5.0),
         # run.sh always exports this var (possibly to an empty string when no
         # MQTT service/option is set), so a plain .get(..., default) default
         # never actually applies -- fall back explicitly on emptiness too.

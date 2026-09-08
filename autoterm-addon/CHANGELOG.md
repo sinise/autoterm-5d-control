@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0
+
+- Added a "Prevent freezing" switch and target (0-10°C): an independent
+  frost-protection safety net that starts the heater whenever cabin
+  temperature reaches the floor, regardless of the auto-thermostat's own
+  state or a prior manual Stop. Never stops a run it didn't start, so it
+  doesn't fight the auto-thermostat or a manual preheat session.
+
 ## 1.1.0
 
 - Added a "Start pump (ventilation only)" button, using a newly-confirmed

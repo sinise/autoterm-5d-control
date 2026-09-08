@@ -6,6 +6,7 @@ HEATER_PORT=$(bashio::config 'heater_port')
 BAUD=$(bashio::config 'baud')
 PREHEAT_DEFAULT=$(bashio::config 'preheat_default_minutes')
 AUTO_TARGET=$(bashio::config 'auto_target_default')
+PREVENT_FREEZING_TARGET=$(bashio::config 'prevent_freezing_target_default')
 
 if bashio::config.true 'autodiscover_ports'; then
     bashio::log.info "autodiscover_ports enabled -- probing serial ports for panel/heater"
@@ -53,6 +54,7 @@ export AUTOTERM_HEATER_PORT="${HEATER_PORT}"
 export AUTOTERM_BAUD="${BAUD}"
 export AUTOTERM_PREHEAT_DEFAULT="${PREHEAT_DEFAULT}"
 export AUTOTERM_AUTO_TARGET_DEFAULT="${AUTO_TARGET}"
+export AUTOTERM_PREVENT_FREEZING_TARGET_DEFAULT="${PREVENT_FREEZING_TARGET}"
 export AUTOTERM_MQTT_HOST="${MQTT_HOST}"
 export AUTOTERM_MQTT_PORT="${MQTT_PORT}"
 export AUTOTERM_MQTT_USERNAME="${MQTT_USER}"

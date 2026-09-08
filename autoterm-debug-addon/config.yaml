@@ -1,0 +1,54 @@
+name: Autoterm 5D Debug
+version: "1.0.0"
+slug: autoterm5d_debug
+description: >-
+  Everything the Autoterm 5D add-on does, plus optional periodic extended
+  telemetry (vendor diagnostic-mode) probing, full raw traffic capture to
+  a downloadable log, and sensors for every known extended field. For
+  protocol reverse-engineering; not needed for normal day-to-day use.
+url: https://github.com/sinise/autoterm-5d-control
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+init: false
+startup: services
+boot: auto
+uart: true
+hassio_api: true
+services:
+  - mqtt:want
+map:
+  - share:rw
+options:
+  panel_port: /dev/ttyUSB1
+  heater_port: /dev/ttyUSB3
+  baud: 2400
+  autodiscover_ports: false
+  preheat_default_minutes: 30
+  auto_target_default: 20.0
+  mqtt_host: ""
+  mqtt_port: 1883
+  mqtt_username: ""
+  mqtt_password: ""
+  debug_mode_default: false
+  debug_interval_seconds_default: 60
+  capture_log_default: false
+  capture_log_max_mb: 20
+schema:
+  panel_port: str
+  heater_port: str
+  baud: int
+  autodiscover_ports: bool
+  preheat_default_minutes: int(1,600)
+  auto_target_default: float(5,35)
+  mqtt_host: str?
+  mqtt_port: port?
+  mqtt_username: str?
+  mqtt_password: password?
+  debug_mode_default: bool
+  debug_interval_seconds_default: int(5,3600)
+  capture_log_default: bool
+  capture_log_max_mb: int(1,500)

@@ -1,0 +1,57 @@
+configuration:
+  panel_port:
+    name: Panel port
+    description: >-
+      Serial device wired to the comfort panel leg of the inline proxy
+      (dev03 side -- see docs/PROTOCOL.md in the main repo). Verify by
+      content, not by devnode number: USB-serial adapters can re-enumerate.
+  heater_port:
+    name: Heater port
+    description: >-
+      Serial device wired to the heater leg of the inline proxy (dev04
+      side). Commands are injected out this port.
+  baud:
+    name: Baud rate
+    description: UART baud rate. 2400 8N1 confirmed on the reference hardware.
+  autodiscover_ports:
+    name: Autodiscover panel/heater ports
+    description: >-
+      On startup, probe every /dev/ttyUSB*//dev/ttyACM* device to find which
+      is wired to the panel and which to the heater, and save the result
+      over panel_port/heater_port. Sends only the non-actuating status
+      query, never start/stop. Leave off unless you've just rewired/replugged
+      the USB-serial adapter -- see DOCS.md.
+  preheat_default_minutes:
+    name: Default preheat duration (minutes)
+    description: Initial value of the Preheat duration number entity, before it's changed from Home Assistant.
+  auto_target_default:
+    name: Default auto-thermostat target (°C)
+    description: Initial target temperature for the software auto-thermostat climate entity.
+  mqtt_host:
+    name: MQTT host (fallback)
+    description: Only used if no MQTT service is discovered automatically (e.g. no Mosquitto add-on installed).
+  mqtt_port:
+    name: MQTT port (fallback)
+    description: Only used if no MQTT service is discovered automatically.
+  mqtt_username:
+    name: MQTT username (fallback)
+    description: Only used if no MQTT service is discovered automatically.
+  mqtt_password:
+    name: MQTT password (fallback)
+    description: Only used if no MQTT service is discovered automatically.
+  debug_mode_default:
+    name: Debug mode default
+    description: >-
+      Whether the extended-telemetry probe (vendor "PUBR0" handshake) is
+      sent on startup. Live-togglable from Home Assistant afterward -- read
+      DOCS.md before enabling, it's unconfirmed-safe with the physical
+      panel also on the bus.
+  debug_interval_seconds_default:
+    name: Debug probe interval default (seconds)
+    description: Initial value of the Debug probe interval number entity.
+  capture_log_default:
+    name: Capture log default
+    description: Whether the raw traffic capture log starts on on startup.
+  capture_log_max_mb:
+    name: Capture log size cap (MB)
+    description: Per-file size cap for the raw traffic capture log under /share/autoterm_debug.

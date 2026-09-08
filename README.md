@@ -20,6 +20,7 @@ also available -- see [`autoterm-addon/`](autoterm-addon/).
 | `tools/baud_sweep.sh` | Baud-rate discovery sweep, for bringing this up on unfamiliar hardware. |
 | `docs/PROTOCOL.md` | Full protocol writeup: frame format, CRC, device roles, message catalog, state machine, confirmed commands, open questions. |
 | `autoterm-addon/` | Home Assistant Supervisor add-on: owns the serial ports directly (runs instead of `autoterm_web.py`), publishes status and exposes controls via MQTT discovery. See its `DOCS.md`. |
+| `autoterm-debug-addon/` | Same as `autoterm-addon/`, plus optional extended-telemetry probing and a downloadable raw traffic capture log, for continuing the protocol reverse-engineering. Install instead of `autoterm-addon/`, not alongside it. See its `DOCS.md`. |
 
 ## Hardware
 
@@ -145,6 +146,15 @@ same auto-thermostat hysteresis loop, and Start preheat/Start
 thermostat/Stop buttons. See its `DOCS.md` for wiring prerequisites,
 options, and installation (copy the folder to `/addons/` on the Home
 Assistant host, or add this repo as a custom add-on repository).
+
+[`autoterm-debug-addon/`](autoterm-debug-addon/) is the same add-on plus
+protocol reverse-engineering tools: an optional periodic probe that unlocks
+the vendor diagnostic tool's richer extended telemetry (fan speed, fuel
+pump frequency, temperatures, voltage, named operating mode -- see
+`docs/PROTOCOL.md`), sensors for all of it, and a toggleable raw traffic
+capture log saved under `/share` for further analysis. Install it instead
+of `autoterm-addon/`, not alongside it -- see its `DOCS.md` before enabling
+debug mode, it sends an unconfirmed-safe frame on the live bus.
 
 ## Roadmap
 

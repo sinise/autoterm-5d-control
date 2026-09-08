@@ -26,9 +26,76 @@ both left **off** (the default) -- in that mode it behaves exactly like the
 regular add-on. The extra risk described below only applies once you
 actually turn debug mode on.
 
-Physical wiring (which two wires to cut, the 12V red-wire warning, a
-diagram) is the same regardless of which add-on you install -- see the
-regular add-on's [DOCS.md, "Wiring"](../autoterm-addon/DOCS.md#wiring-connecting-the-pi-to-the-heater).
+## Wiring: connecting the Pi to the heater
+
+Same wiring regardless of which add-on you install -- duplicated here
+rather than linked, since cross-add-on links don't resolve inside Home
+Assistant's own add-on documentation viewer.
+
+**Hardware needed:** a USB-to-serial adapter exposing **two independent
+5V TTL UART interfaces** (not RS-232, and not a 3.3V-only adapter unless
+it's confirmed 5V-tolerant on its inputs -- the panel/heater bus runs 5V
+TTL logic). A single 4-port adapter (e.g. an FTDI/CP2108-based quad
+adapter) works well since it gives you two spare ports beyond the two this
+add-on needs.
+
+**The panel-heater harness has (at least) four wires you care about:**
+
+| Wire | Carries |
+|---|---|
+| Yellow | The panel/display's **RX** -- i.e. this is the wire the **heater transmits on** |
+| White | The panel/display's **TX** -- i.e. this is the wire the **heater receives on** |
+| Red | **+12V power**, not a data signal |
+| Black (or similar) | Ground, common to the whole harness |
+
+**Cut both the yellow and the white wire** (only those two -- leave red and
+black intact) at a convenient point between the panel and the heater. Each
+cut leaves a "panel-side" stub and a "heater-side" stub. Wire each stub to
+the UART port on that same side -- one wire, one direction of travel, per
+diagram:
+
+```
+YELLOW wire -- carries data FROM the heater TO the panel:
+
+   HEATER >---[cut]---> HEATER_PORT's RX pin
+
+        (add-on relays it here, in software)
+
+   PANEL_PORT's TX pin >---[cut]---> PANEL / DISPLAY
+
+
+WHITE wire -- carries data FROM the panel TO the heater:
+
+   PANEL / DISPLAY >---[cut]---> PANEL_PORT's RX pin
+
+        (add-on relays it here, in software)
+
+   HEATER_PORT's TX pin >---[cut]---> HEATER
+```
+
+So: `heater_port` RX = yellow's heater-side stub, `heater_port` TX =
+white's heater-side stub; `panel_port` RX = white's panel-side stub,
+`panel_port` TX = yellow's panel-side stub. The add-on relays bytes
+between `panel_port` and `heater_port` in software (see
+`docs/PROTOCOL.md`), so the panel and heater talk exactly as before, just
+through the Pi in the middle.
+
+**Do not connect the red wire to anything on the Pi or the USB-serial
+adapter.** It's +12V, not a logic-level signal -- feeding 12V into a UART
+RX pin built for 3.3V/5V logic can permanently damage the adapter (and
+possibly the Pi's USB port behind it) if that input isn't rated for it.
+Leave it connected exactly as it already is between the panel and heater;
+this add-on has no reason to touch the power wire at all.
+
+**Ground is not optional.** Tie the Pi's GND (shared between both UART
+ports is fine) to the harness's black/ground wire. A missing shared ground
+produces pure garbage on the line, not silence -- if a capture looks like
+noise, check this first.
+
+Confirm which physical port ended up as `panel_port` vs `heater_port` by
+**content, not by assumption** -- USB-serial adapters can re-enumerate
+after a replug (see `CONTEXT.md` in the main repo for why this matters and
+how to check).
 
 ## Debug mode: extended telemetry probing
 
@@ -86,16 +153,19 @@ plus its `language.res` string table (plaintext data files read directly,
 not a decompile of the tool itself), the same way `autoterm_flow_5`'s
 fields were originally derived and cross-checked against a real capture.
 
-**Only `autoterm_flow_5` is confirmed against real hardware.** Every other
-option below is read straight from the vendor tool's own data and has
-**never been validated**: the byte offsets could be wrong, the field set
-could be incomplete (some models expose 5-6 temperature-ish registers;
-only 4 slots are wired up here -- see "Known limitation" below), and it
-isn't even confirmed that the extended-telemetry mechanism itself (the
-`PUBR0` handshake, the `dev02`/`type01` frame) works the same way on that
-model, or applies at all. The add-on logs a warning at startup, and a
-**Heater profile** sensor shows the active selection with a `(NOT TESTED)`
-suffix, for anything but Flow 5.
+**Only `autoterm_flow_5`, `binar_5s`, and `binar_5s_next` are confirmed
+against real hardware** -- the latter two share the exact same internal
+codename (`BINAR-5S`) as Flow 5 in the vendor's own `.pfl` files, meaning
+byte-identical field data, not a separate guess. Every other option below
+is read straight from the vendor tool's own data and has **never been
+validated**: the byte offsets could be wrong, the field set could be
+incomplete (some models expose 5-6 temperature-ish registers; only 4
+slots are wired up here -- see "Known limitation" below), and it isn't
+even confirmed that the extended-telemetry mechanism itself (the `PUBR0`
+handshake, the `dev02`/`type01` frame) works the same way on that model,
+or applies at all. The add-on logs a warning at startup, and a **Heater
+profile** sensor shows the active selection with a `(NOT TESTED)` suffix,
+for anything but those three.
 
 | Option value | Vendor tool's display name | Internal codename | Status |
 |---|---|---|---|
@@ -105,8 +175,8 @@ suffix, for anything but Flow 5.
 | `autoterm_air_8d` | AUTOTERM AIR 8D | PLANAR-8D | untested |
 | `autoterm_air_9d` | AUTOTERM AIR 9D | PLANAR-9D | untested |
 | `autoterm_flow_5` | AUTOTERM FLOW 5 | BINAR-5S | **tested** |
-| `binar_5s_next` | BINAR-5S-NEXT | BINAR-5S | untested (byte-identical to Flow 5's data, but not itself tested) |
-| `binar_5s` | BINAR-5S | BINAR-5S | untested (byte-identical to Flow 5's data, but not itself tested) |
+| `binar_5s_next` | BINAR-5S-NEXT | BINAR-5S | **tested** (byte-identical data to Flow 5, same internal codename) |
+| `binar_5s` | BINAR-5S | BINAR-5S | **tested** (byte-identical data to Flow 5, same internal codename) |
 | `planar_2_with_flame_sensor` | PLANAR-2 with flame sensor | PLANAR-2 with flame sensor | untested |
 | `planar_2d` | PLANAR-2D | PLANAR-2D | untested |
 | `planar_2mk` | PLANAR-2MK | PLANAR-2MK | untested |

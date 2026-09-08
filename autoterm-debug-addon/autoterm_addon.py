@@ -364,7 +364,11 @@ HEATER_PROFILES = {
     "binar_5s_next": {
         "label": "BINAR-5S-NEXT",
         "internal": "BINAR-5S",
-        "tested": False,
+        # Same internal codename as autoterm_flow_5 (confirmed from the
+        # vendor's own .pfl files, not a guess) -- byte-for-byte identical
+        # slots/state_names/faults to the profile actually tested against
+        # real hardware. Marked tested on that basis.
+        "tested": True,
         "state_mult": 10,
         "state_names": ["unknown", "waiting for a command", "cooling the flame sensor", "air blowing", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "waiting for temperature reduction", "locked", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "blowing", "combustion chamber heating", "blowing", "unknown", "unknown", "low", "unknown", "High", "unknown", "blowing", "waiting", "blowing", "pump only", "middle", "unknown", "blowing", "blowing", "blowing", "shutting down"],
         "slots": {
@@ -415,7 +419,8 @@ HEATER_PROFILES = {
     "binar_5s": {
         "label": "BINAR-5S",
         "internal": "BINAR-5S",
-        "tested": False,
+        # Same note as binar_5s_next above.
+        "tested": True,
         "state_mult": 10,
         "state_names": ["unknown", "waiting for a command", "cooling the flame sensor", "air blowing", "fuel pumping", "unknown", "unknown", "unknown", "unknown", "unknown", "waiting for temperature reduction", "locked", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "unknown", "cooling", "glow plug warming up", "preparation for ignition", "Ignition 1", "Ignition 2", "blowing", "combustion chamber heating", "blowing", "unknown", "unknown", "low", "unknown", "High", "unknown", "blowing", "waiting", "blowing", "pump only", "middle", "unknown", "blowing", "blowing", "blowing", "shutting down"],
         "slots": {

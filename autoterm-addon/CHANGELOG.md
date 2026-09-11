@@ -1,5 +1,25 @@
 # Changelog
 
+## 3.0.0
+
+- **Renamed**: `Autoterm Heater Debug` -> `Autoterm Heater`, slug
+  `autoterm_heater_debug` -> `autoterm_heater`, folder
+  `autoterm-debug-addon/` -> `autoterm-addon/` -- this is now the only
+  add-on in the repo (the non-debug one was removed as redundant; see
+  main repo README). **Not** a repeat of the 2.0.0 entity-breaking rename:
+  `NODE_ID`/the device name were already `autoterm_heater`/"Autoterm
+  Heater" (unchanged since 2.0.0), so every `sensor.autoterm_heater_*`
+  entity ID stays exactly as it was -- only the add-on's own Supervisor
+  identity (its name/slug) changes. Since Supervisor treats a slug change
+  as a different add-on, you'll need to remove the old install and add
+  this one fresh from the renamed repository, then re-enter your
+  Configuration options (ports, heater_profile, etc. -- these don't carry
+  over from a fresh add-on install, unlike the entities themselves). Also
+  dropped a couple of internal-only "debug" leftovers with no
+  user-visible effect (MQTT client ID suffix, Python logger name) and
+  fixed a startup log line that still said "Autoterm 5D DEBUG bridge"
+  from before the 2.0.0 rename.
+
 ## 2.3.0
 
 - **Removed** the experimental Thermostat keep-alive switch added in

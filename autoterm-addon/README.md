@@ -1,4 +1,4 @@
-# Autoterm Heater Debug
+# Autoterm Heater
 
 Home Assistant Supervisor add-on for an Autoterm-family diesel heater: owns
 both UART ports directly (inline between the comfort panel and the heater),

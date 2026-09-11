@@ -1,12 +1,14 @@
-name: Autoterm Heater Debug
-version: "2.3.0"
-slug: autoterm_heater_debug
+name: Autoterm Heater
+version: "3.0.0"
+slug: autoterm_heater
 description: >-
-  Everything the Autoterm Heater add-on does, plus optional periodic
-  extended telemetry (vendor diagnostic-mode) probing across 19 heater
-  models, full raw traffic capture to a downloadable log, and sensors for
-  every known extended field. For protocol reverse-engineering; not
-  needed for normal day-to-day use.
+  Controls an Autoterm-family diesel heater and its comfort panel over
+  UART, publishing live status and exposing start/stop/thermostat controls
+  as Home Assistant entities via MQTT discovery. Confirmed against a real
+  Autoterm 5D / Flow 5 (BINAR-5S) unit -- see docs/PROTOCOL.md. Also
+  includes optional extended telemetry (vendor diagnostic-mode) probing
+  across 19 heater models, a downloadable raw traffic capture log, and a
+  Bypass mode -- all off by default.
 url: https://github.com/sinise/autoterm-heater-control
 arch:
   - aarch64

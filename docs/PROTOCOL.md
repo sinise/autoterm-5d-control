@@ -127,7 +127,7 @@ real overnight capture -- every restart event was `start_thermostat`,
 none was `stop`). This looked like it could be either an internal timeout
 independent of what started it, or something the real panel does that
 this add-on doesn't (e.g. periodically re-affirming the `00 22` marker
-while running). Settled with a Bypass-mode capture (debug add-on 2.2.0):
+while running). Settled with a Bypass-mode capture (add-on 2.2.0):
 this add-on sent zero commands for over an hour while the heater ran in
 thermostat mode started directly from the physical display (26°C,
 "unlimited" runtime) -- the identical ~30-40 minute self-stop-then-
@@ -186,7 +186,7 @@ connected -- two distinct failure modes found, one fixed, one narrowed:**
    while the heater side -- including the extended stream itself -- kept
    working fine throughout). The panel's firmware was clearly never built
    to receive an unsolicited 65-byte frame from `dev02` mid-poll-cycle.
-   **Fixed** in the debug add-on (from v1.1.0): this specific frame is
+   **Fixed** in the add-on (from v1.1.0): this specific frame is
    filtered out of the heater->panel relay direction, decoded for the
    add-on's own use but never forwarded to the panel's wire.
 2. **Sending the `PUBR0` handshake itself can also corrupt the panel's
@@ -198,7 +198,7 @@ connected -- two distinct failure modes found, one fixed, one narrowed:**
    handshake sends, not all -- a timing collision between the handshake
    write and the panel/heater's own in-flight exchange on the shared
    line, not a guaranteed failure. **Narrowed, not proven eliminated**, in
-   the debug add-on from v1.5.0: the handshake is held until the bus has
+   the add-on from v1.5.0: the handshake is held until the bus has
    been quiet for 250ms before sending, rather than fired on a blind
    timer. Not re-validated against a fresh long capture the way (1) was --
    treat `PUBR0` as experimental, watch `Telemetry stale` after enabling
@@ -309,7 +309,7 @@ The vendor tool ships one `.pfl` profile per heater model (19 total,
 `Profiles/*.pfl`) -- the extended-frame field derivation above was redone
 generically across all of them (same method: read the plaintext formulas
 and state/fault tables, cross-reference `language.res` for labels) and
-baked into `autoterm-debug-addon` as a selectable "heater profile". **Only
+baked into the add-on as a selectable "heater profile". **Only
 the Flow 5 / BINAR-5S profile used throughout this document is confirmed
 against real hardware** -- every other model's byte offsets, state names,
 and fault names come straight from the vendor tool's own data with zero

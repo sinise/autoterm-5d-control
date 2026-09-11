@@ -52,7 +52,7 @@ import serial
 from autoterm_protocol import Framer, KNOWN_DEV, crc_bytes
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-log = logging.getLogger("autoterm-debug")
+log = logging.getLogger("autoterm")
 
 NODE_ID = "autoterm_heater"
 DISCOVERY_PREFIX = "homeassistant"
@@ -2222,7 +2222,7 @@ class Bridge:
             "HEATER->PANEL", "heater", self.heater_ser, self.panel_ser, self.panel_lock,
             self.model, self._wire_log, self.stop_evt, filter_fn=is_extended_telemetry_frame)
 
-        self.mqtt = mqtt.Client(client_id=f"{NODE_ID}-debug-bridge", clean_session=True)
+        self.mqtt = mqtt.Client(client_id=f"{NODE_ID}-bridge", clean_session=True)
         if cfg.get("mqtt_username"):
             self.mqtt.username_pw_set(cfg["mqtt_username"], cfg.get("mqtt_password") or None)
         self.mqtt.will_set(AVAILABILITY_TOPIC, payload="offline", retain=True)

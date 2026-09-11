@@ -16,7 +16,7 @@ thermostat) are **working and verified against real hardware**.
 
 | Path | Purpose |
 |---|---|
-| `autoterm-debug-addon/` | The Home Assistant Supervisor add-on -- owns both UART ports directly, publishes status and exposes controls via MQTT discovery, plus optional extended-telemetry probing and a raw traffic capture log. See its `DOCS.md`. |
+| `autoterm-addon/` | The Home Assistant Supervisor add-on -- owns both UART ports directly, publishes status and exposes controls via MQTT discovery, plus optional extended-telemetry probing and a raw traffic capture log. See its `DOCS.md`. |
 | `grafana/` | A Grafana dashboard for the add-on's entities (via Home Assistant's Prometheus integration + VictoriaMetrics). See its `README.md`. |
 | `docs/PROTOCOL.md` | Full protocol writeup: frame format, CRC, device roles, message catalog, state machine, confirmed commands, open questions. |
 
@@ -37,7 +37,7 @@ thermostat) are **working and verified against real hardware**.
   the same harness -- **leave it alone**. It's not a data signal; feeding
   12V into a UART pin built for 3.3V/5V logic can permanently damage the
   adapter (and possibly the Pi behind it) if that input isn't rated for
-  it. See [the add-on's DOCS.md, "Wiring"](autoterm-debug-addon/DOCS.md#wiring-connecting-the-pi-to-the-heater)
+  it. See [the add-on's DOCS.md, "Wiring"](autoterm-addon/DOCS.md#wiring-connecting-the-pi-to-the-heater)
   for the full step-by-step and a diagram.
 
 **Confirm which physical port reaches which device before trusting a
@@ -56,8 +56,8 @@ This is a standard Home Assistant Supervisor add-on -- either:
 
 - **Add this repository**: Settings -> Add-ons -> Add-on Store -> ⋮ menu ->
   Repositories -> add `https://github.com/sinise/autoterm-heater-control`,
-  then install "Autoterm Heater Debug" from the store.
-- **Or copy manually**: copy `autoterm-debug-addon/` into `/addons/` on the
+  then install "Autoterm Heater" from the store.
+- **Or copy manually**: copy `autoterm-addon/` into `/addons/` on the
   Home Assistant host, then install it from the local add-ons list.
 
 See the add-on's `DOCS.md` for wiring, configuration options, and what you

@@ -1,4 +1,4 @@
-# Autoterm Heater Debug add-on
+# Autoterm Heater add-on
 
 Controls an Autoterm-family diesel heater and its comfort panel over UART:
 owns both serial ports directly, publishes live status, and exposes

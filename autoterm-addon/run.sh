@@ -73,6 +73,6 @@ export AUTOTERM_CAPTURE_LOG_DEFAULT="${CAPTURE_LOG_DEFAULT}"
 export AUTOTERM_CAPTURE_LOG_MAX_MB="${CAPTURE_LOG_MAX_MB}"
 export AUTOTERM_CAPTURE_LOG_DIR="/config/autoterm_debug"
 
-bashio::log.info "Starting Autoterm 5D DEBUG bridge: panel=${PANEL_PORT} heater=${HEATER_PORT} mqtt=${MQTT_HOST}:${MQTT_PORT} debug_default=${DEBUG_MODE_DEFAULT} capture_default=${CAPTURE_LOG_DEFAULT} heater_profile=${HEATER_PROFILE}"
+bashio::log.info "Starting Autoterm Heater bridge: panel=${PANEL_PORT} heater=${HEATER_PORT} mqtt=${MQTT_HOST}:${MQTT_PORT} debug_default=${DEBUG_MODE_DEFAULT} capture_default=${CAPTURE_LOG_DEFAULT} heater_profile=${HEATER_PROFILE}"
 
 exec python3 /app/autoterm_addon.py

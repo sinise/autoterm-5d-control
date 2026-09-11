@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.1.0
+
+- Fixed a likely cause of periodic "no communication" glitches on the
+  physical panel and the heater appearing to restart on its own every
+  30-40 minutes -- confirmed reported happening with debug mode
+  **disabled**, so it isn't the 1.5.0 handshake-collision issue. Root
+  cause: every command this add-on injects toward the heater (Start
+  preheat/thermostat, Stop, Start pump -- both the manual buttons and the
+  automatic stop/start-thermostat calls Auto thermostat/Prevent freezing
+  make on their own) was written straight onto the bus with no check for
+  whether the panel's own query/reply exchange was already mid-flight.
+  1.5.0 only fixed this for the debug handshake specifically; the same
+  collision risk was always present for every other injected command too,
+  and Auto thermostat/Prevent freezing fire on exactly this kind of
+  interval. The quiet-gap wait (250ms, 2s cap) used for the debug
+  handshake is now shared by every injected command. As with 1.5.0, this
+  narrows the collision window rather than formally proving it eliminated.
+
 ## 2.0.0
 
 - **Renamed**, matching the regular add-on's 2.0.0: `Autoterm 5D Debug` ->

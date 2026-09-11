@@ -145,6 +145,15 @@ heater is actually replying with the richer frame (turns on once a valid
 mode is on but this stays off, the handshake isn't getting a reply, which
 is itself useful information.
 
+**If you're seeing "no communication" glitches on the panel or the heater
+seeming to restart every 30-40 minutes with debug mode off**, that's not
+this issue -- see the 2.1.0 entry in CHANGELOG.md. The same quiet-gap
+protection above turned out to be missing from every other command this
+add-on injects too (Start preheat/thermostat, Stop, Start pump, including
+the automatic ones Auto thermostat/Prevent freezing send on their own),
+which is a much more likely cause of periodic disruption with debug mode
+off. Fixed in 2.1.0.
+
 ## Heater profile: other models
 
 The extended telemetry frame's field formulas (byte offsets, state/mode
@@ -337,3 +346,9 @@ addition:
   you actually have a way to browse `/config` (File editor/Studio Code
   Server add-on installed, or SSH). It should appear as `autoterm_debug/`
   right in the default file tree -- no extra navigation needed.
+- **Panel briefly shows "no communication", or the heater seems to restart
+  on its own every 30-40 minutes -- including with debug mode off**: fixed
+  in 2.1.0, see "Debug mode: extended telemetry probing" above and
+  CHANGELOG.md. Not specific to `PUBR0` -- every injected command
+  (including Auto thermostat/Prevent freezing's automatic ones) had the
+  same collision risk.

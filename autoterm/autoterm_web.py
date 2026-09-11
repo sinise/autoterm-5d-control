@@ -111,6 +111,7 @@ class StatusModel:
         self.status_ts = None
         self.cabin_temp = None
         self.cabin_temp_ts = None
+        self.last_frame_ts = None
         self.log = deque(maxlen=200)
         self.last_command = None
 
@@ -119,6 +120,7 @@ class StatusModel:
         type_ = raw[4] if len(raw) > 4 else None
         payload = raw[5:-2]
         with self.lock:
+            self.last_frame_ts = ts
             if dev == 0x04 and type_ == 0x0F and len(payload) == 18:
                 self.status = decode_status_payload(payload)
                 self.status_ts = ts
@@ -134,6 +136,10 @@ class StatusModel:
         with self.lock:
             self.last_command = {"text": text, "ts": time.time()}
             self.log.append(f"{_iso(time.time())}  >>> INJECTED: {text}")
+
+    def get_last_frame_ts(self):
+        with self.lock:
+            return self.last_frame_ts
 
     def snapshot(self):
         with self.lock:
@@ -199,16 +205,38 @@ class Relay(threading.Thread):
                 self.log_fh.write(line)
 
 
+# Confirmed on real hardware (see autoterm-debug-addon's DebugSender /
+# CHANGELOG 1.5.0/2.1.0): a frame written to heater_ser while the panel's
+# own query/reply exchange is mid-flight can corrupt that exchange. Applies
+# to anything Commander injects, including AutoThermostat's automatic
+# stop/start-thermostat calls, not just a manual button press.
+QUIET_GAP = 0.25
+MAX_EXTRA_WAIT = 2.0
+
+
+def wait_for_quiet_bus(model, stop_evt):
+    deadline = time.time() + MAX_EXTRA_WAIT
+    while time.time() < deadline and not stop_evt.is_set():
+        last = model.get_last_frame_ts()
+        if last is None or time.time() - last >= QUIET_GAP:
+            return
+        time.sleep(0.05)
+    # Gave up waiting for a quiet gap -- send anyway rather than delaying
+    # indefinitely if the bus is unusually busy.
+
+
 class Commander:
     """Builds and injects command frames toward the heater, impersonating the panel."""
 
-    def __init__(self, heater_ser, heater_lock, model, log_fh):
+    def __init__(self, heater_ser, heater_lock, model, log_fh, stop_evt):
         self.heater_ser = heater_ser
         self.heater_lock = heater_lock
         self.model = model
         self.log_fh = log_fh
+        self.stop_evt = stop_evt
 
     def _send(self, dev, type_, payload=b""):
+        wait_for_quiet_bus(self.model, self.stop_evt)
         frame = build_frame(dev, type_, payload)
         try:
             with self.heater_lock:
@@ -507,7 +535,7 @@ def main():
 
     panel_to_heater = Relay("PANEL->HEATER", panel_ser, heater_ser, heater_lock, model, log_fh, stop_evt)
     heater_to_panel = Relay("HEATER->PANEL", heater_ser, panel_ser, panel_lock, model, log_fh, stop_evt)
-    commander = Commander(heater_ser, heater_lock, model, log_fh)
+    commander = Commander(heater_ser, heater_lock, model, log_fh, stop_evt)
     auto = AutoThermostat(model, commander, log_fh, stop_evt)
 
     panel_to_heater.start()

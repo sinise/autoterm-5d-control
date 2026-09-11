@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.1.0
+
+- Fixed a likely cause of periodic "no communication" glitches on the
+  physical panel and the heater appearing to restart on its own every
+  30-40 minutes with Auto thermostat (or Prevent freezing) enabled: every
+  command this add-on injects toward the heater (Start preheat/thermostat,
+  Stop, Start pump -- both the manual buttons and the automatic
+  stop/start-thermostat calls Auto thermostat and Prevent freezing make on
+  their own) was written straight onto the bus with no check for whether
+  the panel's own query/reply exchange was already mid-flight. That's the
+  same collision mechanism the debug add-on's 1.5.0 fix addressed for its
+  diagnostic handshake, but it was never applied here -- and Auto
+  thermostat/Prevent freezing routinely fire on exactly this kind of
+  interval, with no debug mode involved. Every injected command now waits
+  for a 250ms quiet gap on the bus first (same as the debug handshake),
+  up to a 2s cap. As with that fix, this narrows the collision window
+  rather than formally proving it eliminated -- if you were seeing this,
+  it's worth confirming the frequency actually drops.
+
 ## 2.0.0
 
 - **Renamed**: add-on name `Autoterm 5D` -> `Autoterm Heater`, slug

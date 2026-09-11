@@ -220,6 +220,7 @@ class StatusModel:
         self.status_ts = None
         self.cabin_temp = None
         self.cabin_temp_ts = None
+        self.last_frame_ts = None
         self.last_command = None
         persisted = load_persisted()
         self.preheat_minutes = persisted.get("preheat_minutes", preheat_minutes_default)
@@ -229,6 +230,7 @@ class StatusModel:
         type_ = raw[4] if len(raw) > 4 else None
         payload = raw[5:-2]
         with self.lock:
+            self.last_frame_ts = ts
             if dev == 0x04 and type_ == 0x0F and len(payload) == 18:
                 self.status = decode_status_payload(payload)
                 self.status_ts = ts
@@ -252,6 +254,10 @@ class StatusModel:
     def get_preheat_minutes(self):
         with self.lock:
             return self.preheat_minutes
+
+    def get_last_frame_ts(self):
+        with self.lock:
+            return self.last_frame_ts
 
     def snapshot(self, auto_snapshot=None, pf_snapshot=None):
         auto_snapshot = auto_snapshot or {}
@@ -327,15 +333,41 @@ class Relay(threading.Thread):
                     self.model.note_frame(ts, self.label, raw)
 
 
+# Confirmed on real hardware (see the debug add-on's DebugSender docstring
+# and CHANGELOG 1.5.0/2.1.0): a frame written to heater_ser while the
+# panel's own query/reply exchange is mid-flight can corrupt that exchange
+# -- the panel briefly shows "no communication" and the heater's state can
+# glitch through a spurious transition. This isn't specific to the debug
+# add-on's diagnostic handshake; it applies to anything Commander injects,
+# including AutoThermostat/PreventFreezing's automatic stop/start-thermostat
+# calls, which is why a periodic collision can happen even with no manual
+# button ever pressed.
+QUIET_GAP = 0.25
+MAX_EXTRA_WAIT = 2.0
+
+
+def wait_for_quiet_bus(model, stop_evt):
+    deadline = time.time() + MAX_EXTRA_WAIT
+    while time.time() < deadline and not stop_evt.is_set():
+        last = model.get_last_frame_ts()
+        if last is None or time.time() - last >= QUIET_GAP:
+            return
+        time.sleep(0.05)
+    # Gave up waiting for a quiet gap -- send anyway rather than delaying
+    # indefinitely if the bus is unusually busy.
+
+
 class Commander:
     """Builds and injects command frames toward the heater, impersonating the panel."""
 
-    def __init__(self, heater_ser, heater_lock, model):
+    def __init__(self, heater_ser, heater_lock, model, stop_evt):
         self.heater_ser = heater_ser
         self.heater_lock = heater_lock
         self.model = model
+        self.stop_evt = stop_evt
 
     def _send(self, dev, type_, payload=b""):
+        wait_for_quiet_bus(self.model, self.stop_evt)
         frame = build_frame(dev, type_, payload)
         try:
             with self.heater_lock:
@@ -668,7 +700,7 @@ class Bridge:
         self.panel_ser = serial.Serial(cfg["panel_port"], cfg["baud"], timeout=0.05)
         self.heater_ser = serial.Serial(cfg["heater_port"], cfg["baud"], timeout=0.05)
 
-        self.commander = Commander(self.heater_ser, self.heater_lock, self.model)
+        self.commander = Commander(self.heater_ser, self.heater_lock, self.model, self.stop_evt)
         self.auto = AutoThermostat(self.model, self.commander, self.stop_evt, cfg["auto_target_default"])
         self.prevent_freezing = PreventFreezing(
             self.model, self.commander, self.stop_evt, cfg["prevent_freezing_target_default"])

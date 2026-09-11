@@ -227,3 +227,12 @@ the config defaults above.
   before in this project from a wrong port/device-byte assumption -- see
   `docs/PROTOCOL.md`'s "Important history" note. Re-verify port assignment
   by content before assuming the command itself is wrong.
+- **Panel briefly shows "no communication", or the heater seems to restart
+  on its own every 30-40 minutes**: fixed in 2.1.0. Any command this
+  add-on injects toward the heater -- including the automatic
+  stop/start-thermostat calls Auto thermostat and Prevent freezing make on
+  their own -- could land while the panel's own query/reply exchange was
+  mid-flight and corrupt it; this is most visible with Auto thermostat
+  enabled, since its own hysteresis logic fires on roughly this kind of
+  interval. 2.1.0 makes every injected command wait for a quiet moment on
+  the bus first. See CHANGELOG.md and `docs/PROTOCOL.md`.

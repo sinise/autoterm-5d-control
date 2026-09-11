@@ -187,6 +187,19 @@ connected -- two distinct failure modes found, one fixed, one narrowed:**
    timer. Not re-validated against a fresh long capture the way (1) was --
    treat `PUBR0` as experimental, watch `Telemetry stale` after enabling
    it.
+   - The same collision mechanism turned out **not to be specific to
+     `PUBR0`**: every command either add-on injects toward the heater
+     (Start preheat/thermostat, Stop, Start pump) shares the exact same
+     write path and had none of this protection, including the automatic
+     stop/start-thermostat calls the Auto thermostat and Prevent freezing
+     loops make on their own -- which happen on their own ~30-90s+
+     interval with no debug mode involved, and can visibly present as the
+     panel briefly going "no communication" plus a spurious state
+     transition, roughly matching Auto thermostat's own hysteresis
+     interval. **Fixed** in both add-ons from v2.1.0: the same 250ms
+     quiet-gap wait now applies to every injected command, not just
+     `PUBR0`. As with the handshake fix, this narrows the window rather
+     than proving it eliminated.
 
 Frame: `AA | 02 | 3a 00 | 01 | <58-byte payload> | crc16`. Indices below
 are 0-based into that 58-byte payload.

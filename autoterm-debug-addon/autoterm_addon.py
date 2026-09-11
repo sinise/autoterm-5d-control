@@ -1504,16 +1504,41 @@ class Relay(threading.Thread):
                     return
 
 
+# Shared by every code path that injects a frame toward the heater
+# (Commander, DebugSender): confirmed on real hardware that a frame landing
+# while the panel's own query/reply exchange is mid-flight can corrupt that
+# exchange (see DebugSender's docstring -- originally diagnosed for the
+# debug handshake specifically, but the mechanism is generic to anything
+# written to heater_ser, including AutoThermostat/PreventFreezing/manual
+# start-stop commands via Commander, which is why this lives at module
+# level instead of duplicated per class).
+QUIET_GAP = 0.25
+MAX_EXTRA_WAIT = 2.0
+
+
+def wait_for_quiet_bus(model, stop_evt):
+    deadline = time.time() + MAX_EXTRA_WAIT
+    while time.time() < deadline and not stop_evt.is_set():
+        last = model.get_last_frame_ts()
+        if last is None or time.time() - last >= QUIET_GAP:
+            return
+        time.sleep(0.05)
+    # Gave up waiting for a quiet gap -- send anyway rather than delaying
+    # indefinitely if the bus is unusually busy.
+
+
 class Commander:
     """Builds and injects command frames toward the heater, impersonating the panel."""
 
-    def __init__(self, heater_ser, heater_lock, model, capture_log):
+    def __init__(self, heater_ser, heater_lock, model, capture_log, stop_evt):
         self.heater_ser = heater_ser
         self.heater_lock = heater_lock
         self.model = model
         self.capture_log = capture_log
+        self.stop_evt = stop_evt
 
     def _send(self, dev, type_, payload=b""):
+        wait_for_quiet_bus(self.model, self.stop_evt)
         frame = build_frame(dev, type_, payload)
         try:
             with self.heater_lock:
@@ -1569,12 +1594,10 @@ class DebugSender(threading.Thread):
     with a timing collision, not a deterministic effect. To reduce this,
     the handshake is held until the bus has been quiet for QUIET_GAP
     seconds (no frame seen from either device) rather than fired blindly on
-    a fixed timer -- see _wait_for_quiet(). This narrows the collision
-    window but doesn't formally prove it's eliminated; still treat this as
-    experimental (see DOCS.md)."""
-
-    QUIET_GAP = 0.25
-    MAX_EXTRA_WAIT = 2.0
+    a fixed timer -- see wait_for_quiet_bus() above (shared with Commander,
+    which turned out to need the same protection for its own injected
+    commands). This narrows the collision window but doesn't formally prove
+    it's eliminated; still treat this as experimental (see DOCS.md)."""
 
     def __init__(self, heater_ser, heater_lock, model, capture_log, stop_evt):
         super().__init__(daemon=True, name="debug-sender")
@@ -1596,18 +1619,8 @@ class DebugSender(threading.Thread):
         except Exception as e:
             log.error("DEBUG PUBR0 send failed: %r", e)
 
-    def _wait_for_quiet(self):
-        deadline = time.time() + self.MAX_EXTRA_WAIT
-        while time.time() < deadline and not self.stop_evt.is_set():
-            last = self.model.get_last_frame_ts()
-            if last is None or time.time() - last >= self.QUIET_GAP:
-                return
-            time.sleep(0.05)
-        # Gave up waiting for a quiet gap -- send anyway rather than
-        # delaying indefinitely if the bus is unusually busy.
-
     def send_when_quiet(self):
-        self._wait_for_quiet()
+        wait_for_quiet_bus(self.model, self.stop_evt)
         self.send_once()
 
     def run(self):
@@ -2107,7 +2120,7 @@ class Bridge:
         self.panel_ser = serial.Serial(cfg["panel_port"], cfg["baud"], timeout=0.05)
         self.heater_ser = serial.Serial(cfg["heater_port"], cfg["baud"], timeout=0.05)
 
-        self.commander = Commander(self.heater_ser, self.heater_lock, self.model, self.capture_log)
+        self.commander = Commander(self.heater_ser, self.heater_lock, self.model, self.capture_log, self.stop_evt)
         self.auto = AutoThermostat(self.model, self.commander, self.stop_evt, cfg["auto_target_default"])
         self.prevent_freezing = PreventFreezing(
             self.model, self.commander, self.stop_evt, cfg["prevent_freezing_target_default"])

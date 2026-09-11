@@ -1,31 +1,33 @@
 #!/usr/bin/env python3
 """
-Autoterm 5D <-> Home Assistant bridge, DEBUG variant (Supervisor add-on).
+Autoterm heater <-> Home Assistant bridge (Supervisor add-on).
 
-Everything autoterm-addon/autoterm_addon.py does (transparent passthrough
-relay, command injection impersonating the panel, software auto-thermostat,
-MQTT + Home Assistant MQTT discovery) -- NOT re-derived here, copied and
-extended, since each Supervisor add-on is a separate Docker build and can
-only see files inside its own directory.
+Owns both UART ports directly: a transparent passthrough relay in each
+direction, command injection impersonating the panel (Start preheat/
+thermostat, Stop, Start pump), software Auto thermostat and Prevent
+freezing, and MQTT + Home Assistant MQTT discovery for all of it.
 
-Additional, debug-only features:
+Plus:
 
   - Optional periodic "PUBR0" handshake toward the heater (the vendor
     diagnostic tool's own literal command), which unlocks a much richer
     58-byte extended telemetry frame (dev02, type01). See docs/PROTOCOL.md,
     "Extended diagnostic-mode telemetry" -- field formulas below are the
     vendor's own (read from its plaintext .pfl profile), cross-checked
-    against a real capture, NOT guessed.
-  - UNCONFIRMED whether sending PUBR0 while the physical panel is also on
-    the bus is safe -- it's OFF by default, and DOCS.md says to only ever
-    enable it while watching the physical panel.
+    against a real capture, NOT guessed. Off by default -- see DOCS.md
+    before enabling it.
   - A toggleable raw traffic capture: every parsed frame and every stray
     (unparsed) byte, tagged with who sent it (display, heater, or this
     add-on itself), written to a human-readable log under /config so it's
     reachable from outside the add-on (Samba / File editor / SSH) without
     needing a dashboard of its own.
-  - Sensors for every known extended-frame field, plus the existing base
-    sensors.
+  - A Bypass switch that suspends all command injection (passive relay
+    only), for capturing a clean baseline uninfluenced by anything this
+    add-on sends.
+  - Sensors for every known extended-frame field, plus the base sensors.
+  - A selectable heater profile: extended-telemetry field formulas across
+    19 vendor models (only the Autoterm 5D/Flow 5 family is confirmed
+    against real hardware -- see docs/PROTOCOL.md and DOCS.md).
 
 Device roles, frame layout, and confirmed commands: dev03 = panel
 (originates start/stop, reports cabin temp), dev04 = heater (rich 18-byte
@@ -1873,7 +1875,7 @@ def discovery_configs(profile):
 
     entries = []
 
-    # -- base sensors/controls (same as autoterm-addon) -------------------
+    # -- base sensors/controls ---------------------------------------------
 
     entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/state/config", {
         **base, "name": "State", "unique_id": f"{NODE_ID}_state",

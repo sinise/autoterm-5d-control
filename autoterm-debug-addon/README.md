@@ -1,14 +1,15 @@
 # Autoterm Heater Debug
 
-Everything the [Autoterm Heater](../autoterm-addon/README.md) add-on does,
-plus optional extended-telemetry probing (across 19 vendor heater
-profiles) and a downloadable raw traffic capture log, for continuing the
-UART protocol reverse-engineering. See the Documentation tab before
-enabling debug mode -- it involves sending an experimental handshake frame
-toward the heater on the live bus (the known issue where the heater's
-reply confused the physical panel is fixed as of 1.1.0, but treat it as
-still experimental beyond that).
+Home Assistant Supervisor add-on for an Autoterm-family diesel heater: owns
+both UART ports directly (inline between the comfort panel and the heater),
+publishes live status and exposes start/stop/thermostat controls as Home
+Assistant entities via MQTT discovery. Also includes optional
+extended-telemetry probing (across 19 vendor heater profiles), a
+downloadable raw traffic capture log, and a Bypass mode for capturing a
+clean baseline -- all off by default, useful for continuing the protocol
+reverse-engineering or just watching more of what the heater is doing.
 
-This add-on **owns both serial ports directly**, same as the regular one --
-install **either** the regular Autoterm Heater add-on **or** this one,
-never both at the same time.
+See the Documentation tab for wiring, configuration, and what each sensor
+means -- read it before enabling debug mode, since it involves sending an
+experimental handshake frame toward the heater on the live bus (see DOCS.md
+for exactly what's confirmed safe and what's still experimental).

@@ -16,7 +16,7 @@ and other units/firmware revisions may differ.
   circuit is required -- a missing ground produced pure garbage on this
   setup before it was fixed.
 - The harness also carries a red +12V power wire alongside the two data
-  wires -- not a signal, don't tap or cut it. See `autoterm-addon/DOCS.md`,
+  wires -- not a signal, don't tap or cut it. See the add-on's `DOCS.md`,
   "Wiring", for the full physical hookup and why (12V into a UART input
   built for 3.3V/5V logic can damage it).
 
@@ -358,17 +358,16 @@ open question in case it becomes relevant when profiling other models.
   are rejected (never tested -- avoid testing extremes on a live fuel
   system without supervision).
 - Fine timing: request/reply gaps are consistently ~30-65ms (heater
-  responding to the panels's poll) and frame timestamps in this project are
-  computed from wire time (bytes-since-start), not read()-completion time --
-  see the monitor script's comments if reusing this for new timing-sensitive
-  analysis.
+  responding to the panel's poll), useful context if reusing this for new
+  timing-sensitive analysis.
 - Whether the 18-byte `type0f` frame carries any of the extended frame's
   fields (voltage, revolutions, fuel pump frequency, fan current, board/
   liquid/overheat temp) at one of its currently-undocumented offsets
   (`[5]`, `[8]`, `[10]`, `[13]`, `[14]`, `[15]`, `[17]`). The vendor `.pfl`
   profile only defines formulas for the extended frame above, not this one
   -- filling these in needs a fresh real capture of actual panel<->heater
-  traffic (`autoterm_monitor.py`), diffed the same way, ideally with the
-  panel's own display readings noted alongside for cross-checking. It's
-  equally possible the panel simply isn't sent this data at all (a simple
-  LCD may not need voltage/fan-current), not that it's hiding undecoded.
+  traffic (the add-on's own raw traffic capture log, see its DOCS.md),
+  diffed the same way, ideally with the panel's own display readings noted
+  alongside for cross-checking. It's equally possible the panel simply
+  isn't sent this data at all (a simple LCD may not need voltage/fan-
+  current), not that it's hiding undecoded.

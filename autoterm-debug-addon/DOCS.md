@@ -1,14 +1,18 @@
 # Autoterm Heater Debug add-on
 
-Everything the regular [Autoterm Heater add-on](../autoterm-addon/DOCS.md)
-does, plus tools for continuing the protocol reverse-engineering: optional
-extended-telemetry probing across 19 vendor heater profiles, a full
-raw-traffic capture log, and sensors for every field decoded so far. This
-is **not** needed for normal day-to-day heater control -- install the
-regular add-on for that. Install this one instead of it when you want the
-extra data or are helping debug the protocol further, including on heater
-models other than the Autoterm 5D / Flow 5 this project was originally
-built against.
+Controls an Autoterm-family diesel heater and its comfort panel over UART:
+owns both serial ports directly, publishes live status, and exposes
+start/stop/thermostat controls as Home Assistant entities via MQTT
+discovery. Confirmed against a real Autoterm 5D / Flow 5 (internally
+BINAR-5S) unit -- see docs/PROTOCOL.md and "Heater profile: other models"
+below for the 18 other vendor models this can decode extended telemetry
+for, none of which are hardware-confirmed.
+
+On top of that, it includes tools for continuing the protocol
+reverse-engineering, all off by default so day-to-day use is unaffected
+unless you turn them on: optional extended-telemetry probing across 19
+vendor heater profiles, a full raw-traffic capture log, and a Bypass mode
+that suspends all command injection for capturing a clean baseline.
 
 Full protocol derivation lives in `docs/PROTOCOL.md` in the
 [main repo](https://github.com/sinise/autoterm-heater-control) -- read it,
@@ -16,23 +20,16 @@ especially "Extended diagnostic-mode telemetry", before enabling debug mode.
 
 ## Before you install
 
-Same prerequisites as the regular add-on: this owns both UART ports
-directly, so **do not** run it alongside `autoterm_web.py`/`autoterm_proxy.py`
-or the regular Autoterm Heater add-on on the same ports -- only one process
-can hold a serial port open. Install **either** the regular add-on **or**
-this one, not both at once (they'll fail to start if you try -- the second
-one to start won't be able to open the ports).
+This add-on owns both UART ports directly -- only one process can hold a
+serial port open, so don't run anything else against the same two ports at
+the same time.
 
-This add-on is safe to install and run with debug mode and capture logging
-both left **off** (the default) -- in that mode it behaves exactly like the
-regular add-on. The extra risk described below only applies once you
-actually turn debug mode on.
+It's safe to install and run with debug mode, capture logging, and Bypass
+all left **off** (the default) -- in that mode it's a plain relay plus
+controls, nothing experimental. The extra risk described below only
+applies once you actually turn debug mode on.
 
 ## Wiring: connecting the Pi to the heater
-
-Same wiring regardless of which add-on you install -- duplicated here
-rather than linked, since cross-add-on links don't resolve inside Home
-Assistant's own add-on documentation viewer.
 
 **Hardware needed:** a USB-to-serial adapter exposing **two independent
 5V TTL UART interfaces** (not RS-232, and not a 3.3V-only adapter unless
@@ -96,8 +93,9 @@ noise, check this first.
 
 Confirm which physical port ended up as `panel_port` vs `heater_port` by
 **content, not by assumption** -- USB-serial adapters can re-enumerate
-after a replug (see `CONTEXT.md` in the main repo for why this matters and
-how to check).
+after a replug, silently swapping which physical connector a device path
+refers to (see docs/PROTOCOL.md's device-role history note, and "Port
+autodiscovery" below for an automated way to handle this).
 
 ## Debug mode: extended telemetry probing
 
@@ -233,13 +231,11 @@ frame, and every stray (unparsed) byte -- tagged with who sent it:
   if debug mode is on)
 
 Each line has a timestamp, the sender, CRC status, decoded `dev`/`type`/
-`len` where applicable, and the full frame in hex -- the same convention
-`autoterm_monitor.py` in the main repo uses, so it's directly comparable to
-other captures in this project. Since 1.1.0, the add-on's own log messages
-(info/warning/error -- MQTT status, serial errors, commands sent, etc) are
-also written into this same file, tagged `log`, interleaved chronologically
-with the traffic -- so one file is normally everything needed for further
-analysis. You don't need to separately pull the Supervisor log tab unless
+`len` where applicable, and the full frame in hex. Since 1.1.0, the add-on's
+own log messages (info/warning/error -- MQTT status, serial errors,
+commands sent, etc) are also written into this same file, tagged `log`,
+interleaved chronologically with the traffic -- so one file is normally
+everything needed for further analysis. You don't need to separately pull the Supervisor log tab unless
 you're chasing something that happened *before* capture logging was turned
 on, or something the add-on logs at a level below what gets mirrored here.
 
@@ -306,27 +302,114 @@ marker); turning it on again later starts a new one.
 
 ## Configuration
 
-All the regular add-on's options, plus:
-
 | Option | Meaning |
 |---|---|
+| `panel_port` | Serial device wired to the panel leg (default `/dev/ttyUSB1`) |
+| `heater_port` | Serial device wired to the heater leg, commands are injected out this port (default `/dev/ttyUSB3`) |
+| `baud` | UART baud rate (default `2400`, confirmed on the reference hardware) |
+| `autodiscover_ports` | If `true`, probe for the correct ports on every startup instead of trusting `panel_port`/`heater_port` -- see below |
+| `preheat_default_minutes` | Initial value of the Preheat duration entity |
+| `auto_target_default` | Initial target for the auto-thermostat climate entity |
+| `prevent_freezing_target_default` | Initial value of the Prevent freezing target entity (0-10°C) -- see below |
+| `mqtt_host`/`mqtt_port`/`mqtt_username`/`mqtt_password` | Only used as a fallback if no MQTT service (e.g. the Mosquitto broker add-on) is auto-discovered |
+| `heater_profile` | Which vendor model's extended-telemetry field formulas to decode with -- see "Heater profile: other models" above |
 | `debug_mode_default` | Whether Debug mode starts on when the add-on (re)starts. Live-togglable from Home Assistant afterward -- this is just the boot default. |
 | `debug_interval_seconds_default` | Initial value of the Debug probe interval number entity. |
 | `capture_log_default` | Whether the capture log starts on when the add-on (re)starts. |
 | `capture_log_max_mb` | Size cap per capture file, in MB. |
+
+If you have the official **Mosquitto broker** add-on (or any add-on
+providing the `mqtt` service) installed, this add-on finds it automatically
+and the `mqtt_*` options can be left blank.
 
 Debug mode, the probe interval, and the capture log toggle are all
 live-controllable from Home Assistant (switches/number entities below) and
 persisted to the add-on's `/data` volume -- the `_default` options above
 only matter on a fresh install or if `/data` is cleared.
 
+## Port autodiscovery
+
+USB-serial adapters can re-enumerate on replug, silently swapping which
+physical connector `/dev/ttyUSB1` vs `/dev/ttyUSB3` refers to -- this has
+bitten this exact project before (see docs/PROTOCOL.md's device-role
+history note). Turning on `autodiscover_ports` runs a probe at every
+startup instead of trusting the configured device paths:
+
+1. **Find the panel** -- listen (read-only) on every `/dev/ttyUSB*` and
+   `/dev/ttyACM*` device at once, up to 8 seconds, for a valid frame from
+   dev03. The panel appears to report its cabin temperature on its own,
+   without needing anything from the heater side, so this works from pure
+   listening.
+2. **Find the heater** -- on each remaining candidate, send the empty
+   type0f status query (the one documented, non-actuating "poll" the panel
+   itself sends -- see `docs/PROTOCOL.md`) and listen for the heater's
+   18-byte dev04 reply. **Only this empty query is ever sent during
+   discovery -- never a start (`type01`/`type02`) or stop (`type03`)
+   command**, since those actually move the heater's state machine and must
+   never be used just to probe a port.
+
+If both are found, they're saved back into this add-on's own configuration
+(so the Configuration tab reflects reality, and you can turn
+`autodiscover_ports` back off afterward) and used for that run. If either
+step fails (nothing found within the timeout), the add-on logs why and
+falls back to whatever `panel_port`/`heater_port` are currently configured
+-- it never refuses to start over a failed discovery.
+
+This is a heuristic based on how the wiring has behaved on the reference
+hardware (see `docs/PROTOCOL.md`'s notes on device roles), not a certainty
+for every unit/firmware revision. Watch the add-on log on first use, and
+cross-check with the physical panel that the labeled entities actually
+track what you expect.
+
+## Prevent freezing
+
+An independent frost-protection safety net, separate from the auto-
+thermostat climate entity. When the **Prevent freezing** switch is on, the
+heater is started (thermostat mode) whenever cabin temperature reaches the
+**Prevent freezing target** (0-10°C) -- **regardless of whether the
+auto-thermostat climate entity is on or off, and regardless of a prior
+manual Stop.** That's the point of the feature: it can't be silently
+defeated by turning normal heating off or pressing Stop once -- only
+turning the Prevent freezing switch itself off disables it.
+
+It won't fight anything else, though: it never stops a heater run it
+didn't start (so it doesn't interrupt the auto-thermostat's own comfort
+run, or a manual preheat session, or another admin's separate Start), and
+if you disable Prevent freezing while it's mid-run, that run is left
+running rather than cut off abruptly -- something else (manual Stop, the
+auto-thermostat) needs to end it.
+
+**Practical implication:** if it's cold and Prevent freezing is on, a
+plain Stop button press won't keep the heater off -- it'll restart within
+seconds once cabin temperature is still at/below the floor. To actually
+stop the heater in that situation, turn off Prevent freezing first (or
+raise its target below the current cabin temperature).
+
 ## What you get
 
-Everything the regular add-on's device has -- including the **Prevent
-freezing** switch/target (frost-protection safety net, starts the heater
-regardless of the auto-thermostat's state or a prior manual Stop -- see
-the [regular add-on's DOCS.md](../autoterm-addon/DOCS.md#prevent-freezing)
-for the full explanation) -- plus:
+A single "Autoterm Heater" device in Home Assistant with:
+
+- **Sensors**: State (idle/running/late-run/cooldown/final-shutdown), Fault
+  code, Cabin temperature, Coolant temperature, Elapsed run time
+- **Binary sensors**: Burner active, Telemetry stale (diagnostic -- turns on
+  if no fresh frames have arrived in 5s, e.g. a wiring or port problem)
+- **Climate entity** ("Autoterm thermostat"): mode `off`/`heat` toggles the
+  add-on's own software hysteresis loop (stops the heater at target+1°C,
+  starts it at target-1°C in thermostat mode); shows current cabin
+  temperature and burner state as HVAC action
+- **Number**: Preheat duration (minutes), used by the Start preheat button;
+  Prevent freezing target (°C, 0-10)
+- **Switch**: Prevent freezing -- see above
+- **Buttons**: Start preheat, Start thermostat (manual, one-shot -- distinct
+  from the climate entity's automatic loop), Stop, Start pump (ventilation
+  only, no combustion -- runs the circulation fan/pump without heat; stop it
+  with the same Stop button)
+
+All confirmed protocol commands (start preheat/thermostat, stop) and the
+device-role/frame-format knowledge this relies on come from
+`docs/PROTOCOL.md` in the main repo -- not guessed.
+
+Plus, from the debug-only features above:
 
 - **Switch**: Debug mode, Capture raw traffic log, Bypass (disable all
   injection)
@@ -368,9 +451,31 @@ vendor's own string table but haven't been confirmed against a real fault.
 
 ## Troubleshooting
 
-Same as the regular add-on (see its DOCS.md) for MQTT/entity issues. In
-addition:
-
+- **No entities appear in Home Assistant**: check MQTT is actually
+  discovered (add-on log should say "Using MQTT service auto-discovery"
+  rather than the fallback-options warning) and that the MQTT integration is
+  set up in Home Assistant (Settings -> Devices & Services).
+- **Entities show unavailable**: the add-on publishes an MQTT "offline" LWT
+  on crash/stop -- check the add-on log for a serial error (wrong port,
+  permission, or an unplugged adapter).
+- **Commands have no visible effect**: this exact failure mode has happened
+  before in this project from a wrong port/device-byte assumption -- see
+  `docs/PROTOCOL.md`'s "Important history" note. Re-verify port assignment
+  by content before assuming the command itself is wrong.
+- **Panel briefly shows "no communication"**: narrowed (not proven
+  eliminated) in 2.1.0 -- every command this add-on injects toward the
+  heater, including the automatic stop/start-thermostat calls Auto
+  thermostat/Prevent freezing make on their own, now waits for a quiet
+  moment on the bus first rather than landing mid-exchange with the panel.
+  See CHANGELOG.md and `docs/PROTOCOL.md`. A separate, still-unexplained
+  source of brief byte-level noise on the heater leg was also found and is
+  independent of anything this add-on sends -- see `docs/PROTOCOL.md`.
+- **The heater seems to restart on its own every 30-40 minutes**: this is
+  **not** a bug in this add-on -- confirmed with a Bypass-mode capture (see
+  above) that the exact same cycle happens with this add-on sending zero
+  commands, heater started and set purely from the physical display in its
+  own unlimited-runtime thermostat mode. It's the heater/panel's own native
+  behavior. See `docs/PROTOCOL.md`.
 - **Extended sensors stay blank**: Debug mode is probably off, or the
   handshake isn't getting a reply -- check the **Extended telemetry
   active** binary sensor and the add-on log for "DEBUG sent PUBR0
@@ -380,9 +485,3 @@ addition:
   you actually have a way to browse `/config` (File editor/Studio Code
   Server add-on installed, or SSH). It should appear as `autoterm_debug/`
   right in the default file tree -- no extra navigation needed.
-- **Panel briefly shows "no communication", or the heater seems to restart
-  on its own every 30-40 minutes -- including with debug mode off**: fixed
-  in 2.1.0, see "Debug mode: extended telemetry probing" above and
-  CHANGELOG.md. Not specific to `PUBR0` -- every injected command
-  (including Auto thermostat/Prevent freezing's automatic ones) had the
-  same collision risk.

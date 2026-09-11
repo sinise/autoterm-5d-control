@@ -1,12 +1,9 @@
 """
-Vendored from ../../autoterm/autoterm_monitor.py (CRC + framing only).
-
-A Supervisor add-on build can only see files inside its own add-on
-directory, so this is a copy, not an import, of the already-solved and
-verified protocol primitives -- CRC algorithm and frame layout are NOT
-re-derived here. Keep this in sync by hand if autoterm_monitor.py's
-crc16_modbus/Framer/KNOWN_DEV ever change. See docs/PROTOCOL.md in the main
-repo for the full derivation.
+CRC and frame-splitting primitives for the Autoterm UART protocol -- kept
+in its own module because a Supervisor add-on build can only see files
+inside its own add-on directory (can't import from elsewhere in the repo).
+See docs/PROTOCOL.md in the main repo for the full protocol derivation
+(frame format, CRC algorithm, device roles) this implements.
 
 Frame layout:
 

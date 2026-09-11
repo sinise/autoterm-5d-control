@@ -272,6 +272,63 @@ you did and when (e.g. "turned on Debug mode at the start, pressed Start
 preheat around the 2 minute mark"), and it can be diffed against the
 already-decoded fields the same way the extended-frame work was done.
 
+## Thermostat keep-alive (experimental)
+
+**Background:** the heater has been observed self-stopping (going idle on
+its own) roughly every 30-40 minutes even with Auto thermostat or Prevent
+freezing enabled -- confirmed from a real overnight capture that neither
+of those two features ever sends a `stop` themselves in that window; the
+heater goes idle on its own, and they only ever restart it afterwards.
+It's also confirmed, both from the code and from that same capture, that
+`start_thermostat()` never sends any duration/timeout to the heater --
+only preheat mode does. Since a setpoint/duration for thermostat mode was
+never found on the wire in either direction to begin with (see
+docs/PROTOCOL.md), one untested theory is that the real physical panel
+periodically re-affirms the "start thermostat" marker while running, and
+this add-on never has -- so the heater may be timing out a stale
+thermostat-mode session on its own.
+
+**What the switch does:** while it's on, and the heater is confirmed
+running (not idle) because *this add-on* put it into thermostat mode --
+manually, via Auto thermostat, or via Prevent freezing -- it re-sends the
+exact same 9-byte marker frame every 10 minutes. It never sends anything
+new, and it deliberately does nothing after a preheat start, a pump-only
+start, or a deliberate stop (even while the heater is still mid-cooldown,
+not yet back to idle) -- see `StatusModel.note_start_mode()` if you want
+the exact conditions.
+
+This is genuinely experimental -- off by default, and untested against
+real hardware over a full cycle at the time of writing. Turn it on, then
+compare against a run with it off (or use a capture log across both) to
+see whether it actually changes the self-stop interval.
+
+## Bypass (disable all injection)
+
+**What it does:** while this switch is on, the add-on stops sending
+*anything* it wouldn't otherwise be asked to by the physical panel --
+Start preheat/thermostat/Stop/Start pump (manual or automatic, including
+Auto thermostat and Prevent freezing), the debug handshake, and the
+thermostat keep-alive above are all suspended (each attempt is logged
+instead of sent). The real panel keeps talking to the real heater exactly
+as it always does -- this only stops the *add-on's own* commands, not the
+passive relay.
+
+**Why you'd use it:** to capture a clean baseline showing what the heater
+actually does entirely on its own (or driven only by the physical panel),
+with zero chance that anything this add-on injects is a contributing
+factor -- useful when you're not yet sure whether a symptom (like the
+30-40 minute self-stop above) is something this add-on is doing versus
+something the heater/panel already do by themselves.
+
+**Logging:** turning Bypass on starts a separate log file,
+`/config/autoterm_debug/bypass_<timestamp>.log` -- same format as the
+normal capture log, but its own file and its own on/off state, so a
+bypass test is captured cleanly regardless of whether the regular
+**Capture raw traffic log** switch happens to be on or off. The **Bypass
+log file** and **Bypass log size** sensors show the current file without
+needing to go find it. Turning Bypass off closes that file (with an end
+marker); turning it on again later starts a new one.
+
 ## Configuration
 
 All the regular add-on's options, plus:
@@ -296,7 +353,8 @@ regardless of the auto-thermostat's state or a prior manual Stop -- see
 the [regular add-on's DOCS.md](../autoterm-addon/DOCS.md#prevent-freezing)
 for the full explanation) -- plus:
 
-- **Switch**: Debug mode, Capture raw traffic log
+- **Switch**: Debug mode, Capture raw traffic log, Thermostat keep-alive
+  (experimental), Bypass (disable all injection)
 - **Number**: Debug probe interval (seconds)
 - **Button**: Send debug handshake now
 - **Binary sensor**: Extended telemetry active, Glow plug
@@ -307,7 +365,8 @@ for the full explanation) -- plus:
   frequency, Flame temperature, Liquid temperature (extended), Overheat
   sensor temperature, Board temperature, Supply voltage, Fault (extended,
   named), Fault code (extended, numeric mirror), Engine state, Relay
-  state, Fan current, Capture log file, Capture log size
+  state, Fan current, Capture log file, Capture log size, Bypass log file,
+  Bypass log size
 - **Sensor** (always available): State code (numeric mirror of `State`),
   Heater profile (shows the active selection, `(NOT TESTED)` for anything
   but Flow 5 -- see "Heater profile: other models" above)

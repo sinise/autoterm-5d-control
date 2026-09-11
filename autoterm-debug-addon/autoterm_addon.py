@@ -1173,9 +1173,10 @@ def save_persisted(data):
 # --------------------------------------------------------------------------
 
 class CaptureLog:
-    def __init__(self, directory, max_mb):
+    def __init__(self, directory, max_mb, name_prefix="capture"):
         self.directory = directory
         self.max_bytes = max_mb * 1024 * 1024
+        self.name_prefix = name_prefix
         # Reentrant: note() is called from a logging.Handler, and a couple
         # of code paths (e.g. the size-cap warning in _write()) log from
         # inside an already-held lock -- a plain Lock would deadlock there.
@@ -1191,7 +1192,7 @@ class CaptureLog:
             if self.fh is not None:
                 return
             os.makedirs(self.directory, exist_ok=True)
-            name = f"capture_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+            name = f"{self.name_prefix}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
             self.path = os.path.join(self.directory, name)
             self.fh = open(self.path, "a", buffering=1)
             self.bytes_written = 0
@@ -1255,13 +1256,40 @@ class CaptureLog:
             log.warning("capture log %s reached its size cap -- no longer writing "
                         "(toggle it off and back on to start a fresh file)", self.path)
 
-    def status(self):
+    def status(self, prefix="capture_log"):
         with self.lock:
             return {
-                "capture_log_enabled": self.enabled,
-                "capture_log_file": os.path.basename(self.path) if self.path else None,
-                "capture_log_bytes": self.bytes_written,
+                f"{prefix}_enabled": self.enabled,
+                f"{prefix}_file": os.path.basename(self.path) if self.path else None,
+                f"{prefix}_bytes": self.bytes_written,
             }
+
+
+class CaptureLogFanout:
+    """Looks like a single CaptureLog to Relay/Commander/DebugSender, but
+    dispatches every call to a list of real ones -- each independently
+    decides whether it's started and actually writes. Used so the same
+    traffic can land in both the normal capture log and the separate
+    bypass-mode log without either caller needing to know there are two."""
+
+    def __init__(self, logs):
+        self.logs = logs
+
+    def frame(self, *args, **kwargs):
+        for lg in self.logs:
+            lg.frame(*args, **kwargs)
+
+    def stray(self, *args, **kwargs):
+        for lg in self.logs:
+            lg.stray(*args, **kwargs)
+
+    def raw_send(self, *args, **kwargs):
+        for lg in self.logs:
+            lg.raw_send(*args, **kwargs)
+
+    def note(self, *args, **kwargs):
+        for lg in self.logs:
+            lg.note(*args, **kwargs)
 
 
 class CaptureLogHandler(logging.Handler):
@@ -1295,11 +1323,18 @@ class StatusModel:
         self.cabin_temp_ts = None
         self.last_frame_ts = None
         self.last_command = None
+        # What we last told the heater to do, and (for "thermostat") when --
+        # used by ThermostatKeepalive to know it's safe to re-affirm the
+        # marker, and to never do so after a deliberate stop/pump-only
+        # start even if the heater is still mid-cooldown (not yet "idle").
+        self.start_mode = None
+        self.start_mode_ts = None
         persisted = load_persisted()
         self.preheat_minutes = persisted.get("preheat_minutes", preheat_minutes_default)
         self.debug_mode = persisted.get("debug_mode", debug_mode_default)
         self.debug_interval = persisted.get("debug_interval", debug_interval_default)
         self.capture_log_wanted = persisted.get("capture_log_enabled", capture_log_default)
+        self.bypass_mode = persisted.get("bypass_mode", False)
 
     def note_frame(self, ts, direction, raw):
         dev = raw[1]
@@ -1326,6 +1361,29 @@ class StatusModel:
     def note_command(self, text):
         with self.lock:
             self.last_command = {"text": text, "ts": time.time()}
+
+    def note_start_mode(self, mode):
+        """mode is 'thermostat', 'preheat', or None (stopped/pump-only/
+        unknown). Only called after a command actually went out (not
+        under bypass mode)."""
+        with self.lock:
+            self.start_mode = mode
+            self.start_mode_ts = time.time() if mode == "thermostat" else None
+
+    def get_start_mode_info(self):
+        with self.lock:
+            return self.start_mode, self.start_mode_ts
+
+    def set_bypass_mode(self, enabled):
+        with self.lock:
+            self.bypass_mode = bool(enabled)
+        persisted = load_persisted()
+        persisted["bypass_mode"] = bool(enabled)
+        save_persisted(persisted)
+
+    def get_bypass_mode(self):
+        with self.lock:
+            return self.bypass_mode
 
     def set_preheat_minutes(self, minutes):
         with self.lock:
@@ -1372,10 +1430,13 @@ class StatusModel:
         with self.lock:
             return self.last_frame_ts
 
-    def snapshot(self, auto_snapshot=None, pf_snapshot=None, capture_status=None):
+    def snapshot(self, auto_snapshot=None, pf_snapshot=None, capture_status=None,
+                 keepalive_snapshot=None, bypass_log_status=None):
         auto_snapshot = auto_snapshot or {}
         pf_snapshot = pf_snapshot or {}
         capture_status = capture_status or {}
+        keepalive_snapshot = keepalive_snapshot or {}
+        bypass_log_status = bypass_log_status or {}
         with self.lock:
             now = time.time()
             status_age = None if self.status_ts is None else now - self.status_ts
@@ -1400,6 +1461,7 @@ class StatusModel:
                     self.profile["label"] if self.profile["tested"]
                     else f"{self.profile['label']} (NOT TESTED)"
                 ),
+                "bypass_mode": self.bypass_mode,
             }
             snap.update(self.status)
             snap.update(self.extended)
@@ -1409,7 +1471,9 @@ class StatusModel:
             snap["prevent_freezing_enabled"] = pf_snapshot.get("enabled")
             snap["prevent_freezing_target"] = pf_snapshot.get("target")
             snap["prevent_freezing_last_note"] = pf_snapshot.get("last_note")
+            snap["thermostat_keepalive_enabled"] = keepalive_snapshot.get("enabled")
             snap.update(capture_status)
+            snap.update(bypass_log_status)
             return snap
 
 
@@ -1538,6 +1602,16 @@ class Commander:
         self.stop_evt = stop_evt
 
     def _send(self, dev, type_, payload=b""):
+        """Returns True if a frame actually went out, False if bypass mode
+        suppressed it -- callers use this to decide whether to record a
+        start-mode change or send a follow-up frame."""
+        if self.model.get_bypass_mode():
+            log.warning(
+                "BYPASS: not sending dev=%02x type=%02x payload=%s (bypass mode "
+                "enabled -- injection suspended, passthrough only)",
+                dev, type_, payload.hex(" "),
+            )
+            return False
         wait_for_quiet_bus(self.model, self.stop_evt)
         frame = build_frame(dev, type_, payload)
         try:
@@ -1547,6 +1621,7 @@ class Commander:
             log.info("INJECT sent %s", frame.hex(" "))
             self.capture_log.raw_send(ts, "rpi", frame)
             self.model.note_command(f"sent {frame.hex(' ')}")
+            return True
         except Exception as e:
             log.error("INJECT failed %s: %r", frame.hex(" "), e)
             self.model.note_command(f"FAILED to send {frame.hex(' ')}: {e!r}")
@@ -1558,17 +1633,21 @@ class Commander:
     def start_preheat(self, minutes):
         minutes = max(0, min(int(minutes), 600))
         log.info("requested: start preheat %dmin", minutes)
-        self._send(0x03, 0x01, bytes([0x00, 0x1E]))
+        if not self._send(0x03, 0x01, bytes([0x00, 0x1E])):
+            return
+        self.model.note_start_mode("preheat")
         time.sleep(1.5)
         self._send(0x03, 0x02, minutes.to_bytes(2, "big"))
 
     def start_thermostat(self):
         log.info("requested: start thermostat")
-        self._send(0x03, 0x01, bytes([0x00, 0x22]))
+        if self._send(0x03, 0x01, bytes([0x00, 0x22])):
+            self.model.note_start_mode("thermostat")
 
     def stop(self):
         log.info("requested: stop")
-        self._send(0x03, 0x03)
+        if self._send(0x03, 0x03):
+            self.model.note_start_mode(None)
 
     def start_pump(self):
         # type 0x21, payload 00 28 -- confirmed against a real capture
@@ -1576,7 +1655,8 @@ class Commander:
         # Only this exact payload has been observed; it's sent verbatim
         # rather than parameterized since nothing else is confirmed safe.
         log.info("requested: start pump (ventilation only)")
-        self._send(0x03, 0x21, bytes([0x00, 0x28]))
+        if self._send(0x03, 0x21, bytes([0x00, 0x28])):
+            self.model.note_start_mode(None)
 
 
 class DebugSender(threading.Thread):
@@ -1608,6 +1688,9 @@ class DebugSender(threading.Thread):
         self.stop_evt = stop_evt
 
     def send_once(self):
+        if self.model.get_bypass_mode():
+            log.warning("BYPASS: not sending PUBR0 handshake (bypass mode enabled)")
+            return
         frame = build_pubr0_frame()
         try:
             with self.heater_lock:
@@ -1805,6 +1888,77 @@ class PreventFreezing(threading.Thread):
                 log.error("PREVENT-FREEZING action failed: %r", e)
 
 
+class ThermostatKeepalive(threading.Thread):
+    """Optional, off-by-default experiment: while the heater is confirmed
+    running in thermostat mode, periodically re-sends the exact same
+    "start thermostat" marker frame (dev03 type01, payload 00 22) it was
+    originally started with.
+
+    Motivation: the heater has been observed self-stopping (going idle on
+    its own) roughly every 30-40 minutes even under Auto thermostat/Prevent
+    freezing, which only ever re-starts it afterwards -- confirmed from a
+    real overnight capture that neither of those ever sends a `stop`
+    themselves in that window, and confirmed from the code that
+    `start_thermostat()` never sends any duration/timeout payload (only
+    preheat mode does). Since target/duration for thermostat mode was
+    never found on the wire in either direction to begin with (see
+    docs/PROTOCOL.md), one untested possibility is that the real panel
+    re-affirms this marker periodically while running and our software
+    never has, and the heater times out a stale thermostat-mode session on
+    its own. This re-sends the identical, already-proven-safe frame on an
+    interval -- never anything new -- to test that theory.
+
+    Only fires when the last command we ourselves sent was a thermostat
+    start (never after preheat, pump, or a deliberate stop, and never
+    while idle) -- see StatusModel.note_start_mode()."""
+
+    INTERVAL = 600.0  # 10 min -- comfortably under the shortest observed self-stop (~20 min)
+    POLL_INTERVAL = 10.0
+
+    def __init__(self, model, commander, stop_evt):
+        super().__init__(daemon=True, name="thermostat-keepalive")
+        self.model = model
+        self.commander = commander
+        self.stop_evt = stop_evt
+        self.lock = threading.Lock()
+        persisted = load_persisted()
+        self.enabled = persisted.get("thermostat_keepalive_enabled", False)
+
+    def configure(self, enabled):
+        with self.lock:
+            self.enabled = bool(enabled)
+        persisted = load_persisted()
+        persisted["thermostat_keepalive_enabled"] = self.enabled
+        save_persisted(persisted)
+
+    def snapshot(self):
+        with self.lock:
+            return {"enabled": self.enabled}
+
+    def run(self):
+        while not self.stop_evt.wait(self.POLL_INTERVAL):
+            with self.lock:
+                enabled = self.enabled
+            if not enabled:
+                continue
+
+            snap = self.model.snapshot()
+            if snap.get("state") in (None, "idle"):
+                continue
+
+            mode, last_ts = self.model.get_start_mode_info()
+            if mode != "thermostat" or last_ts is None:
+                continue
+            if time.time() - last_ts < self.INTERVAL:
+                continue
+
+            try:
+                log.info("KEEPALIVE re-sending thermostat marker (experimental, still running)")
+                self.commander.start_thermostat()
+            except Exception as e:
+                log.error("KEEPALIVE action failed: %r", e)
+
+
 def discovery_configs(profile):
     """(topic, payload) pairs for every entity, published retained on connect."""
     base = {"availability_topic": AVAILABILITY_TOPIC, "device": DEVICE_INFO}
@@ -1925,6 +2079,14 @@ def discovery_configs(profile):
         "min": 0, "max": 10, "step": 0.5, "unit_of_measurement": "°C", "mode": "box",
         "icon": "mdi:thermometer-low",
     }))
+    entries.append((f"{DISCOVERY_PREFIX}/switch/{NODE_ID}/thermostat_keepalive/config", {
+        **base, "name": "Thermostat keep-alive (experimental)",
+        "unique_id": f"{NODE_ID}_thermostat_keepalive",
+        "state_topic": STATE_TOPIC,
+        "value_template": "{{ 'ON' if value_json.thermostat_keepalive_enabled else 'OFF' }}",
+        "command_topic": f"{CMD_PREFIX}/thermostat_keepalive/set", "icon": "mdi:refresh-circle",
+        "entity_category": "config",
+    }))
 
     # -- debug controls -----------------------------------------------------
 
@@ -1968,6 +2130,24 @@ def discovery_configs(profile):
         **base, "name": "Capture log size", "unique_id": f"{NODE_ID}_capture_log_size",
         "state_topic": STATE_TOPIC,
         "value_template": "{{ (value_json.capture_log_bytes / 1024) | round(1) if value_json.capture_log_bytes is not none else '' }}",
+        "unit_of_measurement": "KB", "icon": "mdi:file-chart-outline", "entity_category": "diagnostic",
+    }))
+
+    entries.append((f"{DISCOVERY_PREFIX}/switch/{NODE_ID}/bypass_mode/config", {
+        **base, "name": "Bypass (disable all injection)", "unique_id": f"{NODE_ID}_bypass_mode",
+        "state_topic": STATE_TOPIC, "value_template": "{{ 'ON' if value_json.bypass_mode else 'OFF' }}",
+        "command_topic": f"{CMD_PREFIX}/bypass_mode/set", "icon": "mdi:transit-connection-variant",
+        "entity_category": "config",
+    }))
+    entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/bypass_log_file/config", {
+        **base, "name": "Bypass log file", "unique_id": f"{NODE_ID}_bypass_log_file",
+        "state_topic": STATE_TOPIC, "value_template": blank_to_none("bypass_log_file"),
+        "icon": "mdi:file-document-outline", "entity_category": "diagnostic",
+    }))
+    entries.append((f"{DISCOVERY_PREFIX}/sensor/{NODE_ID}/bypass_log_size/config", {
+        **base, "name": "Bypass log size", "unique_id": f"{NODE_ID}_bypass_log_size",
+        "state_topic": STATE_TOPIC,
+        "value_template": "{{ (value_json.bypass_log_bytes / 1024) | round(1) if value_json.bypass_log_bytes is not none else '' }}",
         "unit_of_measurement": "KB", "icon": "mdi:file-chart-outline", "entity_category": "diagnostic",
     }))
 
@@ -2113,25 +2293,33 @@ class Bridge:
         self.capture_log = CaptureLog(cfg["capture_log_dir"], cfg["capture_log_max_mb"])
         if self.model.get_capture_log_wanted():
             self.capture_log.start()
-        self._capture_log_handler = CaptureLogHandler(self.capture_log)
+        # Separate log, separate file, started/stopped only by the Bypass
+        # switch -- so a bypass test run's traffic is captured cleanly even
+        # if the normal capture log is off (or vice versa).
+        self.bypass_log = CaptureLog(cfg["capture_log_dir"], cfg["capture_log_max_mb"], name_prefix="bypass")
+        if self.model.get_bypass_mode():
+            self.bypass_log.start()
+        self._wire_log = CaptureLogFanout([self.capture_log, self.bypass_log])
+        self._capture_log_handler = CaptureLogHandler(self._wire_log)
         self._capture_log_handler.setFormatter(logging.Formatter("%(message)s"))
         log.addHandler(self._capture_log_handler)
 
         self.panel_ser = serial.Serial(cfg["panel_port"], cfg["baud"], timeout=0.05)
         self.heater_ser = serial.Serial(cfg["heater_port"], cfg["baud"], timeout=0.05)
 
-        self.commander = Commander(self.heater_ser, self.heater_lock, self.model, self.capture_log, self.stop_evt)
+        self.commander = Commander(self.heater_ser, self.heater_lock, self.model, self._wire_log, self.stop_evt)
         self.auto = AutoThermostat(self.model, self.commander, self.stop_evt, cfg["auto_target_default"])
         self.prevent_freezing = PreventFreezing(
             self.model, self.commander, self.stop_evt, cfg["prevent_freezing_target_default"])
-        self.debug_sender = DebugSender(self.heater_ser, self.heater_lock, self.model, self.capture_log, self.stop_evt)
+        self.debug_sender = DebugSender(self.heater_ser, self.heater_lock, self.model, self._wire_log, self.stop_evt)
+        self.thermostat_keepalive = ThermostatKeepalive(self.model, self.commander, self.stop_evt)
 
         self.panel_to_heater = Relay(
             "PANEL->HEATER", "display", self.panel_ser, self.heater_ser, self.heater_lock,
-            self.model, self.capture_log, self.stop_evt)
+            self.model, self._wire_log, self.stop_evt)
         self.heater_to_panel = Relay(
             "HEATER->PANEL", "heater", self.heater_ser, self.panel_ser, self.panel_lock,
-            self.model, self.capture_log, self.stop_evt, filter_fn=is_extended_telemetry_frame)
+            self.model, self._wire_log, self.stop_evt, filter_fn=is_extended_telemetry_frame)
 
         self.mqtt = mqtt.Client(client_id=f"{NODE_ID}-debug-bridge", clean_session=True)
         if cfg.get("mqtt_username"):
@@ -2154,8 +2342,9 @@ class Bridge:
             "auto_mode/set", "auto_target/set", "preheat_minutes/set",
             "start_preheat", "start_thermostat", "stop", "start_pump",
             "prevent_freezing/set", "prevent_freezing_target/set",
+            "thermostat_keepalive/set",
             "debug_mode/set", "debug_interval/set", "send_debug_handshake",
-            "capture_log/set",
+            "capture_log/set", "bypass_mode/set",
         ):
             client.subscribe(f"{CMD_PREFIX}/{suffix}")
         self._publish_state()
@@ -2196,6 +2385,8 @@ class Bridge:
             self.prevent_freezing.configure(enabled=(payload.upper() == "ON"))
         elif suffix == "prevent_freezing_target/set":
             self.prevent_freezing.configure(target=float(payload))
+        elif suffix == "thermostat_keepalive/set":
+            self.thermostat_keepalive.configure(payload.upper() == "ON")
         elif suffix == "debug_mode/set":
             self.model.set_debug_mode(payload.upper() == "ON")
         elif suffix == "debug_interval/set":
@@ -2209,11 +2400,28 @@ class Bridge:
                 self.capture_log.start()
             else:
                 self.capture_log.stop()
+        elif suffix == "bypass_mode/set":
+            wanted = payload.upper() == "ON"
+            self.model.set_bypass_mode(wanted)
+            if wanted:
+                self.bypass_log.start()
+                log.warning(
+                    "BYPASS MODE ENABLED -- all command injection suspended (Start/Stop "
+                    "buttons, Auto thermostat, Prevent freezing, debug handshake, "
+                    "thermostat keep-alive); pure passive relay only from here on. "
+                    "Logging separately to %s.", self.bypass_log.path,
+                )
+            else:
+                log.info("Bypass mode disabled -- command injection resumed")
+                self.bypass_log.stop()
         else:
             log.warning("unhandled command topic %s", topic)
 
     def _publish_state(self):
-        snap = self.model.snapshot(self.auto.snapshot(), self.prevent_freezing.snapshot(), self.capture_log.status())
+        snap = self.model.snapshot(
+            self.auto.snapshot(), self.prevent_freezing.snapshot(), self.capture_log.status(),
+            self.thermostat_keepalive.snapshot(), self.bypass_log.status(prefix="bypass_log"),
+        )
         self.mqtt.publish(STATE_TOPIC, json.dumps(snap), retain=True)
 
     def _heartbeat(self):
@@ -2231,6 +2439,7 @@ class Bridge:
         self.auto.start()
         self.prevent_freezing.start()
         self.debug_sender.start()
+        self.thermostat_keepalive.start()
         threading.Thread(target=self._command_worker, daemon=True).start()
         threading.Thread(target=self._heartbeat, daemon=True).start()
         threading.Thread(target=self._start_mqtt, daemon=True).start()
@@ -2281,7 +2490,9 @@ class Bridge:
         self.auto.join(timeout=1.0)
         self.prevent_freezing.join(timeout=1.0)
         self.debug_sender.join(timeout=1.0)
+        self.thermostat_keepalive.join(timeout=1.0)
         self.capture_log.stop()
+        self.bypass_log.stop()
         log.removeHandler(self._capture_log_handler)
         self.panel_ser.close()
         self.heater_ser.close()

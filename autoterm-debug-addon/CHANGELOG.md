@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.2.0
+
+- Added a **Thermostat keep-alive (experimental)** switch, off by default:
+  while the heater is confirmed running in thermostat mode, periodically
+  (every 10 min) re-sends the exact same "start thermostat" marker frame
+  it was originally started with. Tests the theory that the heater's own
+  ~30-40 minute self-stop (confirmed *not* caused by any duration this
+  add-on sends -- see docs/PROTOCOL.md and the 2.1.0 entry) might be
+  prevented if that marker is periodically re-affirmed rather than sent
+  once and left alone, the way the real panel might. Never sends anything
+  new, and never fires after preheat, pump-only, or a deliberate stop --
+  only after a thermostat-mode start (manual, Auto thermostat, or Prevent
+  freezing), and only while the heater is confirmed non-idle.
+- Added a **Bypass (disable all injection)** switch: while on, this add-on
+  becomes a pure passive relay -- every command path (Start/Stop/Start
+  pump buttons, Auto thermostat, Prevent freezing, the debug handshake,
+  and the new keep-alive) is suspended and logged instead of sent; real
+  panel<->heater traffic keeps flowing exactly as before. Useful for
+  capturing a clean baseline uninfluenced by anything this add-on injects.
+  While on, all traffic is also logged to a separate `bypass_*.log` file
+  (new "Bypass log file"/"Bypass log size" sensors), independent of the
+  normal capture log's own on/off state, so a bypass test is captured
+  cleanly even if the normal capture log is off.
+
 ## 2.1.0
 
 - Fixed a likely cause of periodic "no communication" glitches on the

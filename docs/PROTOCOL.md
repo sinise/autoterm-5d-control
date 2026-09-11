@@ -119,6 +119,19 @@ type01, payload = 00 22      (fixed marker, in every case observed)
 No `type02` ever follows in thermostat mode -- consistent with the panel
 managing its own stop timing rather than giving the heater a duration.
 
+**Open question this raises:** the heater has been observed self-stopping
+(going idle on its own) roughly every 30-40 minutes under this add-on's
+own Auto thermostat/Prevent freezing, which never send a duration and
+never send a `stop` in that window either (confirmed from a real
+overnight capture -- every restart event was `start_thermostat`, none was
+`stop`). Since the heater has no visible concept of a duration or
+setpoint here, either it has an internal timeout independent of what
+started it, or the real panel does something this add-on doesn't (e.g.
+periodically re-affirming the `00 22` marker while running, as a
+keep-alive). Untested either way -- see the debug add-on's "Thermostat
+keep-alive (experimental)" switch (2.2.0), which re-sends the identical
+marker periodically to test the latter theory.
+
 **Stop:**
 ```
 type03, empty payload

@@ -1,28 +1,34 @@
 # Changelog
 
+## 2.3.0
+
+- **Removed** the experimental Thermostat keep-alive switch added in
+  2.2.0. Ruled out conclusively rather than left unresolved: a Bypass-mode
+  capture (this add-on sending zero commands for over an hour, heater
+  started and set to 26°C directly from the physical display, in its own
+  unlimited-runtime thermostat mode) still showed the same ~30-40 minute
+  self-stop-then-restart, confirming this is entirely the heater/panel's
+  own native behavior -- nothing this add-on could ever have sent or
+  suppressed was involved, so periodically re-affirming a marker had
+  nothing to affect. See docs/PROTOCOL.md's "Open question" note (now
+  resolved) and the 2.2.0 entry below for how it was tested.
+- Reorganized the entity list: all temperature sensors (Cabin, Coolant,
+  Flame, Liquid, Overheat, Board) are now consecutive instead of split
+  across the base and extended-telemetry sections. Defined/Measured
+  revolutions were already adjacent and stay that way.
+
 ## 2.2.0
 
-- Added a **Thermostat keep-alive (experimental)** switch, off by default:
-  while the heater is confirmed running in thermostat mode, periodically
-  (every 10 min) re-sends the exact same "start thermostat" marker frame
-  it was originally started with. Tests the theory that the heater's own
-  ~30-40 minute self-stop (confirmed *not* caused by any duration this
-  add-on sends -- see docs/PROTOCOL.md and the 2.1.0 entry) might be
-  prevented if that marker is periodically re-affirmed rather than sent
-  once and left alone, the way the real panel might. Never sends anything
-  new, and never fires after preheat, pump-only, or a deliberate stop --
-  only after a thermostat-mode start (manual, Auto thermostat, or Prevent
-  freezing), and only while the heater is confirmed non-idle.
 - Added a **Bypass (disable all injection)** switch: while on, this add-on
   becomes a pure passive relay -- every command path (Start/Stop/Start
-  pump buttons, Auto thermostat, Prevent freezing, the debug handshake,
-  and the new keep-alive) is suspended and logged instead of sent; real
-  panel<->heater traffic keeps flowing exactly as before. Useful for
-  capturing a clean baseline uninfluenced by anything this add-on injects.
-  While on, all traffic is also logged to a separate `bypass_*.log` file
-  (new "Bypass log file"/"Bypass log size" sensors), independent of the
-  normal capture log's own on/off state, so a bypass test is captured
-  cleanly even if the normal capture log is off.
+  pump buttons, Auto thermostat, Prevent freezing, the debug handshake) is
+  suspended and logged instead of sent; real panel<->heater traffic keeps
+  flowing exactly as before. Useful for capturing a clean baseline
+  uninfluenced by anything this add-on injects. While on, all traffic is
+  also logged to a separate `bypass_*.log` file (new "Bypass log
+  file"/"Bypass log size" sensors), independent of the normal capture
+  log's own on/off state, so a bypass test is captured cleanly even if the
+  normal capture log is off.
 
 ## 2.1.0
 
